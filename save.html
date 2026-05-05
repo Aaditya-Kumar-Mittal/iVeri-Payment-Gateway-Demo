@@ -1,0 +1,1656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>iVeri Pre-Authorization Demo · Nedbank Enterprise</title>
+<style>
+/* ═══════════════════════════════════════════════════
+   RESET & VARIABLES
+═══════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ned-green      : #009F6B;
+  --ned-dark       : #006B48;
+  --ned-light      : #E8F7F2;
+  --ned-yellow     : #FFD100;
+  --bg             : #0F1923;
+  --surface        : #182533;
+  --surface2       : #1E3044;
+  --border         : #2A4060;
+  --text           : #E2EBF4;
+  --text-muted     : #7A95B0;
+  --success        : #22C55E;
+  --danger         : #EF4444;
+  --warning        : #F59E0B;
+  --info           : #3B82F6;
+  --radius         : 16px;
+  --shadow         : 0 8px 32px rgba(0,0,0,.45);
+  --transition     : .3s cubic-bezier(.4,0,.2,1);
+}
+
+html { font-size: 15px; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ═══════════════════════════════════════════════════
+   LAYOUT
+═══════════════════════════════════════════════════ */
+.app-wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 16px 60px;
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 28px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 28px;
+  box-shadow: var(--shadow);
+}
+.header-logo {
+  width: 48px;
+  height: 48px;
+  background: var(--ned-green);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 900;
+  color: #fff;
+  flex-shrink: 0;
+}
+.header-text h1 { font-size: 1.3rem; font-weight: 700; }
+.header-text p  { font-size: .82rem; color: var(--text-muted); margin-top: 2px; }
+.header-badge {
+  margin-left: auto;
+  background: rgba(0,159,107,.18);
+  color: var(--ned-green);
+  border: 1px solid rgba(0,159,107,.4);
+  border-radius: 20px;
+  padding: 4px 14px;
+  font-size: .78rem;
+  font-weight: 600;
+  letter-spacing: .5px;
+}
+
+/* ═══════════════════════════════════════════════════
+   CONFIG PANEL
+═══════════════════════════════════════════════════ */
+.config-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px 26px;
+  margin-bottom: 28px;
+  box-shadow: var(--shadow);
+}
+.config-panel h2 {
+  font-size: .95rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.config-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  gap: 12px;
+  align-items: end;
+}
+@media(max-width:700px) { .config-grid { grid-template-columns: 1fr 1fr; } }
+
+.field label {
+  display: block;
+  font-size: .75rem;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+.field input, .field select {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: var(--text);
+  font-size: .88rem;
+  outline: none;
+  transition: border-color var(--transition);
+}
+.field input:focus, .field select:focus { border-color: var(--ned-green); }
+.field select option { background: var(--surface2); }
+
+/* ═══════════════════════════════════════════════════
+   CARD ENTRY + CARD VISUAL (two-column)
+═══════════════════════════════════════════════════ */
+.card-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 28px;
+  align-items: start;
+}
+@media(max-width:700px) { .card-section { grid-template-columns: 1fr; } }
+
+/* credit card visual */
+.card-visual-wrap {
+  perspective: 1000px;
+  height: 200px;
+}
+.card-visual {
+  width: 100%;
+  height: 200px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #006B48 0%, #009F6B 60%, #00C985 100%);
+  box-shadow: 0 20px 60px rgba(0,159,107,.35);
+  padding: 22px 26px;
+  position: relative;
+  overflow: hidden;
+  transition: transform .5s cubic-bezier(.4,0,.2,1);
+  transform-style: preserve-3d;
+}
+.card-visual::before {
+  content: '';
+  position: absolute;
+  top: -60px; right: -60px;
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.07);
+}
+.card-visual::after {
+  content: '';
+  position: absolute;
+  bottom: -80px; left: -40px;
+  width: 240px; height: 240px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.05);
+}
+.card-chip {
+  width: 44px; height: 34px;
+  background: linear-gradient(135deg, #FFD100, #FFA500);
+  border-radius: 6px;
+  margin-bottom: 24px;
+  position: relative;
+  z-index:1;
+}
+.card-chip::before {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  width: 60%; height: 60%;
+  border: 1px solid rgba(0,0,0,.2);
+  border-radius: 3px;
+}
+.card-number-display {
+  font-size: 1.25rem;
+  letter-spacing: 3px;
+  font-family: 'Courier New', monospace;
+  color: rgba(255,255,255,.95);
+  margin-bottom: 20px;
+  position: relative;
+  z-index:1;
+}
+.card-meta {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  z-index:1;
+}
+.card-meta-group label {
+  display: block;
+  font-size: .6rem;
+  color: rgba(255,255,255,.6);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin-bottom: 3px;
+}
+.card-meta-group span {
+  font-size: .85rem;
+  color: #fff;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+.card-brand {
+  position: absolute;
+  top: 22px; right: 26px;
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: rgba(255,255,255,.85);
+  z-index:1;
+}
+
+/* card form */
+.card-form-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px 26px;
+  box-shadow: var(--shadow);
+}
+.card-form-panel h2 {
+  font-size: .95rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-grid .full { grid-column: 1 / -1; }
+
+/* quick-fill test card */
+.test-card-hint {
+  margin-top: 14px;
+  padding: 10px 14px;
+  background: rgba(0,159,107,.1);
+  border: 1px dashed rgba(0,159,107,.35);
+  border-radius: 10px;
+  font-size: .78rem;
+  color: var(--ned-green);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.test-card-hint button {
+  background: var(--ned-green);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: .75rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════
+   FLOW TIMELINE
+═══════════════════════════════════════════════════ */
+.timeline {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  margin-bottom: 28px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.timeline-step {
+  flex: 1;
+  min-width: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+.timeline-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 18px;
+  left: calc(50% + 20px);
+  right: calc(-50% + 20px);
+  height: 2px;
+  background: var(--border);
+  transition: background .4s;
+}
+.timeline-step.done:not(:last-child)::after { background: var(--ned-green); }
+
+.tl-dot {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--surface2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .85rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  position: relative;
+  z-index: 1;
+  transition: all .3s;
+}
+.timeline-step.active .tl-dot  { border-color: var(--ned-green); color: var(--ned-green); background: rgba(0,159,107,.15); box-shadow: 0 0 0 4px rgba(0,159,107,.15); }
+.timeline-step.done   .tl-dot  { border-color: var(--ned-green); background: var(--ned-green); color: #fff; }
+.timeline-step.error  .tl-dot  { border-color: var(--danger); background: var(--danger); color: #fff; }
+
+.tl-label {
+  font-size: .72rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-weight: 600;
+  line-height: 1.3;
+}
+.timeline-step.active .tl-label { color: var(--ned-green); }
+.timeline-step.done   .tl-label { color: var(--text); }
+
+/* ═══════════════════════════════════════════════════
+   STEP CARDS
+═══════════════════════════════════════════════════ */
+.step-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
+  transition: border-color .3s;
+}
+.step-card.active   { border-color: var(--ned-green); }
+.step-card.success  { border-color: var(--success); }
+.step-card.failed   { border-color: var(--danger); }
+.step-card.skipped  { opacity: .55; }
+
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 22px;
+  cursor: pointer;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+}
+.step-num {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .8rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.step-card.active  .step-num { background: var(--ned-green); color: #fff; }
+.step-card.success .step-num { background: var(--success);   color: #fff; }
+.step-card.failed  .step-num { background: var(--danger);    color: #fff; }
+
+.step-title { font-size: .95rem; font-weight: 700; flex: 1; }
+.step-subtitle { font-size: .78rem; color: var(--text-muted); margin-top: 2px; }
+
+.step-status-badge {
+  font-size: .72rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+.badge-pending  { background: rgba(255,255,255,.08); color: var(--text-muted); }
+.badge-active   { background: rgba(0,159,107,.2);   color: var(--ned-green); }
+.badge-success  { background: rgba(34,197,94,.2);   color: var(--success); }
+.badge-failed   { background: rgba(239,68,68,.2);   color: var(--danger); }
+.badge-waiting  { background: rgba(245,158,11,.2);  color: var(--warning); }
+
+.step-body {
+  padding: 22px;
+  display: none;
+}
+.step-body.open { display: block; }
+
+/* countdown ring */
+.countdown-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 0;
+}
+.countdown-ring {
+  position: relative;
+  width: 80px; height: 80px;
+}
+.countdown-ring svg { transform: rotate(-90deg); }
+.countdown-ring circle {
+  fill: none;
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+.ring-bg   { stroke: var(--border); }
+.ring-fill { stroke: var(--ned-green); transition: stroke-dashoffset .9s linear; }
+.countdown-num {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--ned-green);
+}
+.countdown-label { font-size: .82rem; color: var(--text-muted); }
+
+/* action button */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 26px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  font-size: .9rem;
+  font-weight: 700;
+  transition: all .2s;
+  text-decoration: none;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--ned-green), var(--ned-dark));
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(0,159,107,.35);
+}
+.btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(0,159,107,.5); }
+.btn-danger  { background: linear-gradient(135deg, #DC2626, #B91C1C); color: #fff; box-shadow: 0 4px 20px rgba(239,68,68,.3); }
+.btn-danger:hover:not(:disabled)  { transform: translateY(-2px); }
+.btn-warn    { background: linear-gradient(135deg, #D97706, #B45309); color: #fff; }
+.btn-success { background: linear-gradient(135deg, #16A34A, #15803D); color: #fff; }
+.btn:disabled { opacity: .45; cursor: not-allowed; transform: none !important; }
+.btn-full { width: 100%; justify-content: center; }
+.btn-sm { padding: 8px 16px; font-size: .8rem; }
+
+/* spinner */
+.spinner {
+  display: inline-block;
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── JSON viewer ── */
+.json-viewer-wrap {
+  margin-top: 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.json-tabs {
+  display: flex;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+.json-tab {
+  padding: 8px 18px;
+  font-size: .78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all .2s;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+.json-tab.active { color: var(--ned-green); border-bottom-color: var(--ned-green); }
+.json-pane {
+  display: none;
+  background: #0A1420;
+  padding: 16px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.json-pane.active { display: block; }
+.json-pane pre {
+  font-family: 'Cascadia Code', 'Fira Code', monospace;
+  font-size: .78rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* JSON syntax colors */
+.json-key    { color: #79B8FF; }
+.json-string { color: #9ECBFF; }
+.json-number { color: #79DCAA; }
+.json-bool   { color: #F97583; }
+.json-null   { color: #F97583; }
+
+/* result banner */
+.result-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  margin-top: 16px;
+  font-size: .85rem;
+  line-height: 1.5;
+}
+.result-banner.success { background: rgba(34,197,94,.12);  border: 1px solid rgba(34,197,94,.3);  }
+.result-banner.error   { background: rgba(239,68,68,.12);  border: 1px solid rgba(239,68,68,.3);  }
+.result-banner.info    { background: rgba(59,130,246,.12); border: 1px solid rgba(59,130,246,.3); }
+.result-banner .icon   { font-size: 1.3rem; flex-shrink: 0; margin-top: 1px; }
+.result-banner strong  { display: block; font-size: .9rem; margin-bottom: 4px; }
+
+/* transaction details grid */
+.tx-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px,1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+.tx-item {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+.tx-item label {
+  display: block;
+  font-size: .68rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  margin-bottom: 4px;
+}
+.tx-item span {
+  font-size: .85rem;
+  font-weight: 600;
+  word-break: break-all;
+}
+.tx-item span.green  { color: var(--ned-green); }
+.tx-item span.yellow { color: var(--ned-yellow); }
+.tx-item span.red    { color: var(--danger); }
+
+/* ── Toast ── */
+#toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 10px;
+  z-index: 9999;
+}
+.toast {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 18px;
+  font-size: .83rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: var(--shadow);
+  animation: slideIn .3s ease;
+  max-width: 340px;
+}
+.toast.success { border-color: var(--success); }
+.toast.error   { border-color: var(--danger); }
+.toast.info    { border-color: var(--info); }
+@keyframes slideIn { from { transform: translateX(120%); opacity:0; } to { transform: translateX(0); opacity:1; } }
+
+/* divider */
+.divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+/* section heading */
+.section-heading {
+  font-size: .82rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-heading::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* reset all button */
+.reset-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 14px;
+}
+
+/* icon helper */
+.icon-circle {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  background: rgba(0,159,107,.15);
+  color: var(--ned-green);
+}
+
+/* ── Outcome toggle (step 4) ── */
+.outcome-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  background: rgba(255,255,255,.03);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.outcome-toggle > span { flex: 1 0 100%; margin-bottom: 4px; }
+.outcome-opt {
+  padding: 8px 20px;
+  border-radius: 8px;
+  background: var(--surface2);
+  border: 2px solid var(--border);
+  cursor: pointer;
+  font-size: .83rem;
+  font-weight: 700;
+  transition: all var(--transition);
+  user-select: none;
+  color: var(--text-muted);
+}
+.outcome-opt:hover { border-color: var(--text-muted); color: var(--text); }
+.outcome-opt.approve.selected { background: rgba(34,197,94,.15); border-color: var(--success); color: var(--success); }
+.outcome-opt.decline.selected { background: rgba(239,68,68,.15); border-color: var(--danger);  color: var(--danger);  }
+
+/* ── Verify button ── */
+.btn-info { background: linear-gradient(135deg, #2563eb, #3b82f6); }
+.btn-info:hover { background: linear-gradient(135deg, #1d4ed8, #2563eb); }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════ -->
+<div class="app-wrap">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-logo">iV</div>
+    <div class="header-text">
+      <h1>iVeri Pre-Authorization Flow Demo</h1>
+      <p>Nedbank Enterprise Gateway · REST API v2.0 · portal.nedsecure.co.za</p>
+    </div>
+    <span class="header-badge">TEST MODE</span>
+  </header>
+
+  <!-- ── Config Panel ── -->
+  <section class="config-panel">
+    <h2><span class="icon-circle">⚙</span> Gateway Configuration</h2>
+    <div class="config-grid">
+      <div class="field">
+        <label>Application ID</label>
+        <input id="cfg-app-id" type="text" value="6d8d5a94-8fa0-428d-a539-3a5baf166f7f" />
+      </div>
+      <div class="field">
+        <label>Certificate ID</label>
+        <input id="cfg-cert-id" type="text" value="5c4b9c74-0063-4240-9cff-f730675c5bd0" />
+      </div>
+      <div class="field">
+        <label>Amount (ZAR cents)</label>
+        <input id="cfg-amount" type="number" value="5000" min="100" />
+        <span style="font-size:.7rem;color:var(--text-muted);margin-top:4px;display:block">5000 = R 50.00</span>
+      </div>
+      <div class="field">
+        <label>Mode</label>
+        <select id="cfg-mode">
+          <option value="Test" selected>Test</option>
+          <option value="Live">Live</option>
+        </select>
+      </div>
+      <div class="field" style="grid-column:1/-1">
+        <label>Authentication Type</label>
+        <select id="cfg-auth-type" onchange="toggleDigestAuth()">
+          <option value="legacy" selected>Legacy – CertificateID in body only</option>
+          <option value="digest">Digest – AuthenticationKey + AuthenticationToken headers</option>
+        </select>
+        <span style="font-size:.7rem;color:var(--text-muted);margin-top:4px;display:block">Digest auth requires setup via <a href="mailto:assist@iveri.co.za">assist@iveri.co.za</a>. Legacy is sufficient for test credentials.</span>
+      </div>
+      <div class="field" id="cfg-auth-secret-wrap" style="display:none;grid-column:1/-1">
+        <label>Authentication Secret <span style="font-size:.7rem;color:var(--text-muted)">(Backoffice → Authentication → Manage Secrets)</span></label>
+        <input id="cfg-auth-secret" type="password" placeholder="Paste your Authentication Secret here" autocomplete="off" />
+        <span style="font-size:.7rem;color:var(--text-muted);margin-top:4px;display:block">⚠ Copy immediately after generation — it is only readable in plain text for a few minutes.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Card Section ── -->
+  <section class="card-section">
+
+    <!-- Credit Card Visual -->
+    <div>
+      <div class="section-heading">💳 Card Preview</div>
+      <div class="card-visual-wrap">
+        <div class="card-visual" id="cardVisual">
+          <div class="card-chip"></div>
+          <div class="card-number-display" id="displayPan">•••• •••• •••• ••••</div>
+          <div class="card-meta">
+            <div class="card-meta-group">
+              <label>Card Holder</label>
+              <span id="displayName">FULL NAME</span>
+            </div>
+            <div class="card-meta-group">
+              <label>Expires</label>
+              <span id="displayExpiry">MM/YY</span>
+            </div>
+          </div>
+          <div class="card-brand" id="displayBrand">VISA</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card Form -->
+    <div class="card-form-panel">
+      <h2><span class="icon-circle">✎</span> Enter Card Details</h2>
+      <div class="form-grid">
+        <div class="field full">
+          <label>Card Number</label>
+          <input id="f-pan" type="text" maxlength="19" placeholder="0000 0000 0000 0000" autocomplete="off" />
+        </div>
+        <div class="field full">
+          <label>Cardholder Name</label>
+          <input id="f-name" type="text" placeholder="John Doe" autocomplete="off" />
+        </div>
+        <div class="field">
+          <label>Expiry (MMYY)</label>
+          <input id="f-expiry" type="text" maxlength="4" placeholder="1226" />
+        </div>
+        <div class="field">
+          <label>CVV / CVV2</label>
+          <input id="f-cvv" type="text" maxlength="4" placeholder="123" autocomplete="off" />
+        </div>
+      </div>
+      <div class="test-card-hint">
+        <span>🧪 Use test card <strong>4242 4242 4242 4242</strong> · Exp <strong>1226</strong> · CVV <strong>123</strong></span>
+        <button onclick="fillTestCard()">Auto-fill</button>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ── Timeline ── -->
+  <div class="section-heading">🔄 Pre-Authorization Flow</div>
+  <div class="timeline" id="timeline">
+    <div class="timeline-step" id="tl-0">
+      <div class="tl-dot">1</div>
+      <div class="tl-label">Add Card &amp;<br/>Tokenize</div>
+    </div>
+    <div class="timeline-step" id="tl-1">
+      <div class="tl-dot">2</div>
+      <div class="tl-label">Pre-Auth<br/>(Reserve)</div>
+    </div>
+    <div class="timeline-step" id="tl-2">
+      <div class="tl-dot">3</div>
+      <div class="tl-label">Release<br/>(Reversal)</div>
+    </div>
+    <div class="timeline-step" id="tl-3">
+      <div class="tl-dot">4</div>
+      <div class="tl-label">Pre-Auth<br/>(Again)</div>
+    </div>
+    <div class="timeline-step" id="tl-4">
+      <div class="tl-dot">5</div>
+      <div class="tl-label">Complete<br/>(Capture)</div>
+    </div>
+  </div>
+
+  <!-- ── Reset ── -->
+  <div class="reset-bar">
+    <button class="btn btn-sm" onclick="resetDemo()" style="background:var(--surface2);border:1px solid var(--border);">↺ Reset Demo</button>
+  </div>
+
+  <!-- ════════════════════════
+       STEP 1 – Tokenize Card
+  ════════════════════════ -->
+  <div class="step-card active" id="step-0">
+    <div class="step-header" onclick="toggleStep(0)">
+      <div class="step-num">1</div>
+      <div style="flex:1">
+        <div class="step-title">Tokenize Card (PANToken Enquiry)</div>
+        <div class="step-subtitle">Obtain a TransactionIndex token from the card number — no funds moved</div>
+      </div>
+      <span class="step-status-badge badge-active" id="badge-0">Active</span>
+      <span style="color:var(--text-muted);margin-left:8px;" id="chevron-0">▾</span>
+    </div>
+    <div class="step-body open" id="body-0">
+      <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:16px;">
+        This step calls the <code style="background:var(--surface2);padding:1px 6px;border-radius:4px;">PANToken</code> enquiry to tokenize the card without charging the cardholder.
+        The returned <strong>TransactionIndex</strong> is stored and used for all subsequent operations.
+      </p>
+      <button class="btn btn-primary btn-full" id="btn-0" onclick="runStep0()">
+        <span id="btn0-icon">🔑</span>
+        <span id="btn0-text">Tokenize Card &amp; Start Flow</span>
+      </button>
+      <div id="result-0"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════
+       STEP 2 – Pre-Auth (Authorisation with PAN)
+  ════════════════════════ -->
+  <div class="step-card skipped" id="step-1">
+    <div class="step-header" onclick="toggleStep(1)">
+      <div class="step-num">2</div>
+      <div style="flex:1">
+        <div class="step-title">Pre-Authorize (Reserve Funds)</div>
+        <div class="step-subtitle">Command: <code style="font-size:.75rem">Authorisation</code> — reserves funds without capturing</div>
+      </div>
+      <span class="step-status-badge badge-pending" id="badge-1">Pending</span>
+      <span style="color:var(--text-muted);margin-left:8px;" id="chevron-1">▾</span>
+    </div>
+    <div class="step-body" id="body-1">
+      <div id="countdown-1" class="countdown-wrap" style="display:none">
+        <div class="countdown-ring">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <circle class="ring-bg" cx="40" cy="40" r="34" />
+            <circle class="ring-fill" id="ring-fill-1" cx="40" cy="40" r="34"
+              stroke-dasharray="213.6" stroke-dashoffset="0" />
+          </svg>
+          <div class="countdown-num" id="cd-num-1">5</div>
+        </div>
+        <div class="countdown-label">Waiting to Pre-Authorize…</div>
+      </div>
+      <button class="btn btn-primary btn-full" id="btn-1" onclick="runStep1()" style="display:none">
+        <span id="btn1-icon">🔒</span>
+        <span id="btn1-text">Pre-Authorize (Reserve Funds)</span>
+      </button>
+      <div id="result-1"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════
+       STEP 3 – Release (AuthorisationReversal)
+  ════════════════════════ -->
+  <div class="step-card skipped" id="step-2">
+    <div class="step-header" onclick="toggleStep(2)">
+      <div class="step-num">3</div>
+      <div style="flex:1">
+        <div class="step-title">Release Authorization (Reversal)</div>
+        <div class="step-subtitle">Command: <code style="font-size:.75rem">AuthorisationReversal</code> — releases the reserved funds back</div>
+      </div>
+      <span class="step-status-badge badge-pending" id="badge-2">Pending</span>
+      <span style="color:var(--text-muted);margin-left:8px;" id="chevron-2">▾</span>
+    </div>
+    <div class="step-body" id="body-2">
+      <div id="countdown-2" class="countdown-wrap" style="display:none">
+        <div class="countdown-ring">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <circle class="ring-bg" cx="40" cy="40" r="34" />
+            <circle class="ring-fill" id="ring-fill-2" cx="40" cy="40" r="34"
+              stroke-dasharray="213.6" stroke-dashoffset="0" />
+          </svg>
+          <div class="countdown-num" id="cd-num-2">5</div>
+        </div>
+        <div class="countdown-label">Waiting to Release Authorization…</div>
+      </div>
+      <button class="btn btn-danger btn-full" id="btn-2" onclick="runStep2()" style="display:none">
+        <span id="btn2-icon">🔓</span>
+        <span id="btn2-text">Release Authorization (Reversal)</span>
+      </button>
+      <div id="result-2"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════
+       STEP 4 – Pre-Auth Again
+  ════════════════════════ -->
+  <div class="step-card skipped" id="step-3">
+    <div class="step-header" onclick="toggleStep(3)">
+      <div class="step-num">4</div>
+      <div style="flex:1">
+        <div class="step-title">Pre-Authorize Again (New Reservation)</div>
+        <div class="step-subtitle">Command: <code style="font-size:.75rem">Authorisation</code> — fresh reservation using card PAN</div>
+      </div>
+      <span class="step-status-badge badge-pending" id="badge-3">Pending</span>
+      <span style="color:var(--text-muted);margin-left:8px;" id="chevron-3">▾</span>
+    </div>
+    <div class="step-body" id="body-3">
+      <div id="countdown-3" class="countdown-wrap" style="display:none">
+        <div class="countdown-ring">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <circle class="ring-bg" cx="40" cy="40" r="34" />
+            <circle class="ring-fill" id="ring-fill-3" cx="40" cy="40" r="34"
+              stroke-dasharray="213.6" stroke-dashoffset="0" />
+          </svg>
+          <div class="countdown-num" id="cd-num-3">5</div>
+        </div>
+        <div class="countdown-label">Waiting to Pre-Authorize Again…</div>
+      </div>
+      <button class="btn btn-warn btn-full" id="btn-3" onclick="runStep3()" style="display:none">
+        <span id="btn3-icon">🔒</span>
+        <span id="btn3-text">Pre-Authorize Again</span>
+      </button>
+      <div id="result-3"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════
+       STEP 5 – Capture (Debit with TransactionIndex)
+  ════════════════════════ -->
+  <div class="step-card skipped" id="step-4">
+    <div class="step-header" onclick="toggleStep(4)">
+      <div class="step-num">5</div>
+      <div style="flex:1">
+        <div class="step-title">Complete Payment (Capture / Follow-up Debit)</div>
+        <div class="step-subtitle">Command: <code style="font-size:.75rem">Debit</code> with TransactionIndex — captures the pre-authorized funds</div>
+      </div>
+      <span class="step-status-badge badge-pending" id="badge-4">Pending</span>
+      <span style="color:var(--text-muted);margin-left:8px;" id="chevron-4">▾</span>
+    </div>
+    <div class="step-body" id="body-4">
+      <div id="countdown-4" class="countdown-wrap" style="display:none"></div>
+
+      <!-- Outcome simulator -->
+      <div class="outcome-toggle" id="outcome-toggle-4">
+        <span style="font-size:.75rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;">🎮 Simulate outcome:</span>
+        <div class="outcome-opt approve selected" id="opt-approve" onclick="setOutcome('approve')">✅ Approve</div>
+        <div class="outcome-opt decline"          id="opt-decline" onclick="setOutcome('decline')">❌ Decline</div>
+      </div>
+
+      <button class="btn btn-success btn-full" id="btn-4" onclick="runStep4()" style="display:none">
+        <span id="btn4-icon">💳</span>
+        <span id="btn4-text">Complete Payment (Capture Funds)</span>
+      </button>
+      <div id="result-4"></div>
+
+      <!-- Verify Payment (Lookup) — shown after successful debit -->
+      <div id="verify-wrap" style="display:none;margin-top:16px;">
+        <div class="divider"></div>
+        <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:10px;">📡 Run a <strong>TransactionStatus</strong> enquiry to confirm the transaction status independently — this is iVeri's polling mechanism for server-side verification.</p>
+        <button class="btn btn-info btn-full" id="btn-verify" onclick="runVerify()">
+          <span id="btnV-icon">🔍</span>
+          <span id="btnV-text">Verify Payment (TransactionStatus Enquiry)</span>
+        </button>
+        <div id="result-verify"></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /.app-wrap -->
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<!-- ════════════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════════════ -->
+<script>
+/* ── State ──────────────────────────────────────── */
+const state = {
+  panToken      : null,   // TransactionIndex from PANToken
+  authTxIndex   : null,   // TransactionIndex from Authorisation (step 1)
+  auth2TxIndex  : null,   // TransactionIndex from 2nd Authorisation (step 3)
+  debitTxIndex  : null,   // TransactionIndex from final Debit (step 4)
+  refNum        : 0,
+  traceNum      : 0,
+};
+
+function nextRef()   { state.refNum++;   return `DEMO${Date.now().toString().slice(-6)}_${state.refNum}`; }
+function nextTrace() { state.traceNum++; return `TRC${Date.now().toString().slice(-8)}_${state.traceNum}`; }
+
+/* ── Card visual updates ─────────────────────────── */
+const fPan    = document.getElementById('f-pan');
+const fName   = document.getElementById('f-name');
+const fExpiry = document.getElementById('f-expiry');
+
+fPan.addEventListener('input', () => {
+  let val = fPan.value.replace(/\D/g,'').slice(0,16);
+  fPan.value = val.replace(/(.{4})/g,'$1 ').trim();
+  const padded = val.padEnd(16,'•');
+  document.getElementById('displayPan').textContent =
+    `${padded.slice(0,4)} ${padded.slice(4,8)} ${padded.slice(8,12)} ${padded.slice(12,16)}`;
+  // brand
+  const brand = val[0]==='4' ? 'VISA' : val[0]==='5' ? 'MC' : val[0]==='3' ? 'AMEX' : '';
+  document.getElementById('displayBrand').textContent = brand;
+});
+fName.addEventListener('input', () => {
+  document.getElementById('displayName').textContent = fName.value.toUpperCase() || 'FULL NAME';
+});
+fExpiry.addEventListener('input', () => {
+  const v = fExpiry.value.replace(/\D/g,'').slice(0,4);
+  fExpiry.value = v;
+  document.getElementById('displayExpiry').textContent =
+    v.length>=2 ? `${v.slice(0,2)}/${v.slice(2)||'YY'}` : 'MM/YY';
+});
+
+function fillTestCard() {
+  fPan.value    = '4242 4242 4242 4242';
+  fName.value   = 'Test Cardholder';
+  fExpiry.value = '1226';
+  document.getElementById('f-cvv').value = '123';
+  fPan.dispatchEvent(new Event('input'));
+  fName.dispatchEvent(new Event('input'));
+  fExpiry.dispatchEvent(new Event('input'));
+  toast('Test card filled ✓', 'success');
+}
+
+/* ── Utils ──────────────────────────────────────── */
+function cfg(id) { return document.getElementById(id).value.trim(); }
+
+function buildBase(command, isEnquiry=false) {
+  const section = isEnquiry ? 'Enquiry' : 'Transaction';
+  return {
+    Version        : '2.0',
+    CertificateID  : `{${cfg('cfg-cert-id')}}`,
+    ProductType    : 'Enterprise',
+    ProductVersion : 'WebAPI',
+    Direction      : 'Request',
+    [section]      : {
+      ApplicationID : `{${cfg('cfg-app-id')}}`,
+      Command       : command,
+      Mode          : cfg('cfg-mode'),
+    },
+  };
+}
+
+/* Backend proxy URL — Express runs on 3000 regardless of how index.html is served */
+const PROXY_URL = 'http://localhost:3000/api/iveri';
+
+function toggleDigestAuth() {
+  const isDigest = document.getElementById('cfg-auth-type').value === 'digest';
+  document.getElementById('cfg-auth-secret-wrap').style.display = isDigest ? '' : 'none';
+}
+
+async function callIveri(payload) {
+  const headers = { 'Content-Type': 'application/json' };
+
+  if (document.getElementById('cfg-auth-type').value === 'digest') {
+    const secret = cfg('cfg-auth-secret');
+    const certId = cfg('cfg-cert-id');
+    if (secret) {
+      headers['X-iVeri-Auth-Secret'] = secret;
+      headers['X-iVeri-Cert-ID']     = certId;
+    }
+  }
+
+  const resp = await fetch(PROXY_URL, {
+    method  : 'POST',
+    headers,
+    body    : JSON.stringify(payload),
+  });
+
+  if (!resp.ok && resp.headers.get('content-length') === '0') {
+    throw new Error(`Server returned ${resp.status} with empty body — is the Node server running on port 3000?`);
+  }
+
+  const text = await resp.text();
+  if (!text) throw new Error('Empty response from server — is the Node server running? Run: npm start');
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(`Invalid JSON response: ${text.slice(0, 120)}`);
+  }
+}
+
+function getPAN()    { return fPan.value.replace(/\s/g,''); }
+function getExpiry() { return fExpiry.value.replace(/\D/g,''); }
+function getCVV()    { return document.getElementById('f-cvv').value.trim(); }
+function getName()   { return fName.value.trim(); }
+
+function validate() {
+  if (!cfg('cfg-cert-id')) { toast('Please enter your Certificate ID', 'error'); return false; }
+  if (getPAN().length < 13) { toast('Please enter a valid card number', 'error'); return false; }
+  if (getExpiry().length < 4) { toast('Please enter a valid expiry date (MMYY)', 'error'); return false; }
+  return true;
+}
+
+/* ── JSON syntax highlighter ─────────────────────── */
+function highlight(obj) {
+  const json = JSON.stringify(obj, null, 2);
+  return json.replace(
+    /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+    match => {
+      if (/^"/.test(match)) {
+        if (/:$/.test(match)) return `<span class="json-key">${match}</span>`;
+        return `<span class="json-string">${match}</span>`;
+      }
+      if (/true|false/.test(match)) return `<span class="json-bool">${match}</span>`;
+      if (/null/.test(match))       return `<span class="json-null">${match}</span>`;
+      return `<span class="json-number">${match}</span>`;
+    }
+  );
+}
+
+function renderJSON(req, resp, containerId) {
+  const reqId  = `req-${containerId}`;
+  const respId = `resp-${containerId}`;
+  return `
+  <div class="json-viewer-wrap">
+    <div class="json-tabs">
+      <div class="json-tab active" id="tab-req-${containerId}"  onclick="switchTab('${containerId}','req')">📤 Request</div>
+      <div class="json-tab"        id="tab-resp-${containerId}" onclick="switchTab('${containerId}','resp')">📥 Response</div>
+    </div>
+    <div class="json-pane active" id="${reqId}"><pre>${highlight(req)}</pre></div>
+    <div class="json-pane"        id="${respId}"><pre>${resp ? highlight(resp) : '<span style="color:var(--text-muted)">Awaiting response…</span>'}</pre></div>
+  </div>`;
+}
+
+function switchTab(id, tab) {
+  document.getElementById(`req-${id}`).classList.toggle('active', tab==='req');
+  document.getElementById(`resp-${id}`).classList.toggle('active', tab==='resp');
+  document.getElementById(`tab-req-${id}`).classList.toggle('active', tab==='req');
+  document.getElementById(`tab-resp-${id}`).classList.toggle('active', tab==='resp');
+}
+
+function txDetails(tx) {
+  if (!tx) return '';
+  const fields = [
+    ['Status',         tx.Result?.Status === '0' ? '✅ Approved' : '❌ ' + tx.Result?.Description, tx.Result?.Status === '0' ? 'green' : 'red'],
+    ['Auth Code',      tx.AuthorisationCode, 'green'],
+    ['Amount',         tx.DisplayAmount || (tx.Amount ? `${(tx.Amount/100).toFixed(2)} ${tx.Currency}` : '-')],
+    ['Currency',       tx.Currency],
+    ['Card (masked)',  tx.CCNumber || tx.PAN],
+    ['Expiry',         tx.ExpiryDate],
+    ['Association',    tx.Association],
+    ['TX Index',       tx.TransactionIndex, 'yellow'],
+    ['Command',        tx.Command],
+    ['Acquirer',       tx.Acquirer],
+    ['Acq Reference',  tx.AcquirerReference],
+    ['Request ID',     tx.RequestID],
+  ].filter(([,v]) => v);
+  return `<div class="tx-details">${fields.map(([l,v,cls=''])=>`
+    <div class="tx-item">
+      <label>${l}</label>
+      <span class="${cls}">${v}</span>
+    </div>`).join('')}
+  </div>`;
+}
+
+/* ── Countdown timer ─────────────────────────────── */
+function countdown(seconds, numId, fillId, onDone) {
+  const circumference = 213.6;
+  let remaining = seconds;
+  document.getElementById(numId).textContent = remaining;
+  document.getElementById(fillId).style.strokeDashoffset = 0;
+
+  const tick = () => {
+    remaining--;
+    document.getElementById(numId).textContent = remaining;
+    const offset = ((seconds - remaining) / seconds) * circumference;
+    document.getElementById(fillId).style.strokeDashoffset = offset;
+    if (remaining <= 0) { onDone(); } else { setTimeout(tick, 1000); }
+  };
+  setTimeout(tick, 1000);
+}
+
+/* ── Step toggle ─────────────────────────────────── */
+function toggleStep(n) {
+  const body = document.getElementById(`body-${n}`);
+  const chev = document.getElementById(`chevron-${n}`);
+  const open = body.classList.contains('open');
+  body.classList.toggle('open', !open);
+  chev.textContent = open ? '▸' : '▾';
+}
+
+/* ── Mark step state ─────────────────────────────── */
+function markStep(n, state) {
+  const card  = document.getElementById(`step-${n}`);
+  const badge = document.getElementById(`badge-${n}`);
+  const tl    = document.getElementById(`tl-${n}`);
+  card.className  = `step-card ${state}`;
+  badge.className = `step-status-badge badge-${state}`;
+  badge.textContent = state.charAt(0).toUpperCase() + state.slice(1);
+  if (state === 'success') { tl.classList.add('done'); tl.classList.remove('active'); }
+  if (state === 'active')  { tl.classList.add('active'); }
+  if (state === 'failed')  { tl.classList.add('error'); tl.classList.remove('active'); }
+}
+
+function activateNextStep(n) {
+  const card = document.getElementById(`step-${n}`);
+  card.classList.remove('skipped');
+  markStep(n, 'active');
+  document.getElementById(`body-${n}`).classList.add('open');
+  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ── Toast ───────────────────────────────────────── */
+function toast(msg, type='info') {
+  const icons = { success:'✅', error:'❌', info:'ℹ️' };
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span>${icons[type]||'ℹ️'}</span> <span>${msg}</span>`;
+  document.getElementById('toast-container').prepend(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+/* ── Busy / ready toggle ─────────────────────────── */
+function setBusy(btnId, iconId, textId, busy, icon='', label='') {
+  const btn = document.getElementById(btnId);
+  btn.disabled = busy;
+  if (busy) {
+    document.getElementById(iconId).innerHTML = '<span class="spinner"></span>';
+    document.getElementById(textId).textContent = 'Processing…';
+  } else {
+    document.getElementById(iconId).textContent = icon;
+    document.getElementById(textId).textContent = label;
+  }
+}
+
+/* ════════════════════════════════════════════════
+   STEP 0 – PANToken (tokenize card)
+════════════════════════════════════════════════ */
+async function runStep0() {
+  if (!validate()) return;
+  setBusy('btn-0','btn0-icon','btn0-text', true);
+  markStep(0, 'active');
+
+  const payload = buildBase('PANToken', true);
+  payload.Enquiry = {
+    ...payload.Enquiry,
+    Amount     : cfg('cfg-amount'),
+    ExpiryDate : getExpiry(),
+    PAN        : getPAN(),
+  };
+  if (getCVV()) payload.Enquiry.CardSecurityCode = getCVV();
+
+  let resp;
+  try { resp = await callIveri(payload); } catch(e) {
+    showResult(0, payload, null, false, e.message);
+    markStep(0,'failed');
+    setBusy('btn-0','btn0-icon','btn0-text', false, '🔑','Retry Tokenize');
+    return;
+  }
+
+  const tx  = resp.Enquiry || resp.Transaction || resp;
+  const ok  = tx?.Result?.Status === '0';
+
+  if (ok) {
+    state.panToken = tx.TransactionIndex;
+    toast('Card tokenized! TransactionIndex saved.', 'success');
+    markStep(0, 'success');
+    showResult(0, payload, resp, true);
+    setBusy('btn-0','btn0-icon','btn0-text', false, '✓','Tokenized');
+    document.getElementById('btn-0').disabled = true;
+    // unlock step 1 with 5s countdown
+    setTimeout(() => {
+      activateNextStep(1);
+      document.getElementById('countdown-1').style.display = 'flex';
+      countdown(5, 'cd-num-1', 'ring-fill-1', () => {
+        document.getElementById('countdown-1').style.display = 'none';
+        document.getElementById('btn-1').style.display = 'flex';
+        markStep(1, 'active');
+      });
+    }, 400);
+  } else {
+    const desc = tx?.Result?.Description || 'Unknown error';
+    toast(`Tokenize failed: ${desc}`, 'error');
+    markStep(0,'failed');
+    showResult(0, payload, resp, false);
+    setBusy('btn-0','btn0-icon','btn0-text', false, '🔑','Retry Tokenize');
+  }
+}
+
+/* ════════════════════════════════════════════════
+   STEP 1 – Pre-Auth (Authorisation with PAN)
+════════════════════════════════════════════════ */
+async function runStep1() {
+  setBusy('btn-1','btn1-icon','btn1-text', true);
+  markStep(1, 'active');
+  document.getElementById('badge-1').textContent = 'Processing…';
+
+  const payload = buildBase('Authorisation');
+  payload.Transaction = {
+    ...payload.Transaction,
+    MerchantReference : nextRef(),
+    MerchantTrace     : nextTrace(),
+    Currency          : 'ZAR',
+    Amount            : cfg('cfg-amount'),
+    ExpiryDate        : getExpiry(),
+    PAN               : getPAN(),
+  };
+  if (getCVV())   payload.Transaction.CardSecurityCode = getCVV();
+  if (getName())  payload.Transaction.CardholderName   = getName();
+
+  let resp;
+  try { resp = await callIveri(payload); } catch(e) {
+    showResult(1, payload, null, false, e.message);
+    markStep(1,'failed'); return;
+  }
+
+  const tx = resp.Transaction || resp;
+  const ok = tx?.Result?.Status === '0';
+
+  if (ok) {
+    state.authTxIndex = tx.TransactionIndex;
+    toast('✅ Pre-Authorization successful! Funds reserved.', 'success');
+    markStep(1,'success');
+    showResult(1, payload, resp, true);
+    document.getElementById('btn-1').disabled = true;
+    // unlock step 2
+    setTimeout(() => {
+      activateNextStep(2);
+      document.getElementById('countdown-2').style.display = 'flex';
+      countdown(5, 'cd-num-2', 'ring-fill-2', () => {
+        document.getElementById('countdown-2').style.display = 'none';
+        document.getElementById('btn-2').style.display = 'flex';
+      });
+    }, 400);
+  } else {
+    toast(`Pre-Auth failed: ${tx?.Result?.Description || ''}`, 'error');
+    markStep(1,'failed');
+    showResult(1, payload, resp, false);
+    setBusy('btn-1','btn1-icon','btn1-text', false, '🔒','Retry Pre-Auth');
+  }
+}
+
+/* ════════════════════════════════════════════════
+   STEP 2 – Release (AuthorisationReversal)
+════════════════════════════════════════════════ */
+async function runStep2() {
+  setBusy('btn-2','btn2-icon','btn2-text', true);
+  markStep(2,'active');
+
+  const payload = buildBase('AuthorisationReversal');
+  payload.Transaction = {
+    ...payload.Transaction,
+    TransactionIndex : state.authTxIndex,
+  };
+
+  let resp;
+  try { resp = await callIveri(payload); } catch(e) {
+    showResult(2, payload, null, false, e.message);
+    markStep(2,'failed'); return;
+  }
+
+  const tx = resp.Transaction || resp;
+  const ok = tx?.Result?.Status === '0';
+
+  if (ok) {
+    toast('✅ Authorization released! Funds returned to cardholder.', 'success');
+    markStep(2,'success');
+    showResult(2, payload, resp, true);
+    document.getElementById('btn-2').disabled = true;
+    // unlock step 3
+    setTimeout(() => {
+      activateNextStep(3);
+      document.getElementById('countdown-3').style.display = 'flex';
+      countdown(5, 'cd-num-3', 'ring-fill-3', () => {
+        document.getElementById('countdown-3').style.display = 'none';
+        document.getElementById('btn-3').style.display = 'flex';
+      });
+    }, 400);
+  } else {
+    toast(`Reversal failed: ${tx?.Result?.Description || ''}`, 'error');
+    markStep(2,'failed');
+    showResult(2, payload, resp, false);
+    setBusy('btn-2','btn2-icon','btn2-text', false, '🔓','Retry Release');
+  }
+}
+
+/* ════════════════════════════════════════════════
+   STEP 3 – Pre-Auth Again (Authorisation with PAN)
+════════════════════════════════════════════════ */
+async function runStep3() {
+  setBusy('btn-3','btn3-icon','btn3-text', true);
+  markStep(3,'active');
+
+  const payload = buildBase('Authorisation');
+  payload.Transaction = {
+    ...payload.Transaction,
+    MerchantReference : nextRef(),
+    MerchantTrace     : nextTrace(),
+    Currency          : 'ZAR',
+    Amount            : cfg('cfg-amount'),
+    ExpiryDate        : getExpiry(),
+    PAN               : getPAN(),
+  };
+  if (getCVV())  payload.Transaction.CardSecurityCode = getCVV();
+  if (getName()) payload.Transaction.CardholderName   = getName();
+
+  let resp;
+  try { resp = await callIveri(payload); } catch(e) {
+    showResult(3, payload, null, false, e.message);
+    markStep(3,'failed'); return;
+  }
+
+  const tx = resp.Transaction || resp;
+  const ok = tx?.Result?.Status === '0';
+
+  if (ok) {
+    state.auth2TxIndex = tx.TransactionIndex;
+    toast('✅ Second Pre-Authorization successful!', 'success');
+    markStep(3,'success');
+    showResult(3, payload, resp, true);
+    document.getElementById('btn-3').disabled = true;
+    // unlock step 4 immediately (no more countdown)
+    setTimeout(() => {
+      activateNextStep(4);
+      document.getElementById('btn-4').style.display = 'flex';
+    }, 400);
+  } else {
+    toast(`2nd Pre-Auth failed: ${tx?.Result?.Description || ''}`, 'error');
+    markStep(3,'failed');
+    showResult(3, payload, resp, false);
+    setBusy('btn-3','btn3-icon','btn3-text', false, '🔒','Retry');
+  }
+}
+
+/* ════════════════════════════════════════════════
+   STEP 4 – Complete Payment (Follow-up Debit)
+════════════════════════════════════════════════ */
+let simulateOutcome = 'approve';
+
+function setOutcome(val) {
+  simulateOutcome = val;
+  document.getElementById('opt-approve').classList.toggle('selected', val === 'approve');
+  document.getElementById('opt-decline').classList.toggle('selected', val === 'decline');
+  const btn = document.getElementById('btn-4');
+  btn.className = val === 'decline'
+    ? 'btn btn-danger btn-full'
+    : 'btn btn-success btn-full';
+  document.getElementById('btn4-icon').textContent = val === 'decline' ? '❌' : '💳';
+  document.getElementById('btn4-text').textContent = val === 'decline'
+    ? 'Simulate Declined Payment'
+    : 'Complete Payment (Capture Funds)';
+}
+
+async function runStep4() {
+  setBusy('btn-4','btn4-icon','btn4-text', true);
+  markStep(4,'active');
+
+  const forceDecline = simulateOutcome === 'decline';
+
+  const payload = buildBase('Debit');
+  payload.Transaction = {
+    ...payload.Transaction,
+    Amount           : cfg('cfg-amount'),
+    MerchantTrace    : nextTrace(),
+    // Use a null UUID to force a gateway decline when simulating failure
+    TransactionIndex : forceDecline
+      ? '{00000000-0000-0000-0000-000000000000}'
+      : state.auth2TxIndex,
+  };
+
+  let resp;
+  try { resp = await callIveri(payload); } catch(e) {
+    showResult(4, payload, null, false, e.message);
+    markStep(4,'failed');
+    setBusy('btn-4','btn4-icon','btn4-text', false,
+      simulateOutcome === 'decline' ? '❌' : '💳',
+      simulateOutcome === 'decline' ? 'Retry Decline Simulation' : 'Retry Capture');
+    return;
+  }
+
+  const tx = resp.Transaction || resp;
+  const ok = tx?.Result?.Status === '0';
+
+  if (ok) {
+    state.debitTxIndex = tx.TransactionIndex;
+    toast('🎉 Payment complete! Funds captured successfully.', 'success');
+    markStep(4,'success');
+    document.getElementById('tl-4').classList.add('done');
+    showResult(4, payload, resp, true, true);
+    setBusy('btn-4','btn4-icon','btn4-text', false, '✓', 'Payment Complete');
+    document.getElementById('btn-4').disabled = true;
+    document.getElementById('outcome-toggle-4').style.display = 'none';
+    document.getElementById('verify-wrap').style.display = 'block';
+    document.getElementById('btn-verify').style.display = 'flex';
+  } else {
+    const desc = tx?.Result?.Description || 'Unknown error';
+    toast(`Payment ${forceDecline ? 'declined (simulated)' : 'failed'}: ${desc}`, forceDecline ? 'info' : 'error');
+    markStep(4,'failed');
+    showResult(4, payload, resp, false);
+    setBusy('btn-4','btn4-icon','btn4-text', false,
+      forceDecline ? '❌' : '💳',
+      forceDecline ? 'Retry Decline Simulation' : 'Retry Capture');
+  }
+}
+
+/* ════════════════════════════════════════════════
+   VERIFY – Lookup enquiry to confirm payment
+════════════════════════════════════════════════ */
+async function runVerify() {
+  setBusy('btn-verify','btnV-icon','btnV-text', true);
+
+  // TransactionStatus is an Enquiry command (not Transaction)
+  const payload = buildBase('TransactionStatus', true);
+  payload.Enquiry = {
+    ...payload.Enquiry,
+    TransactionIndex : state.debitTxIndex,
+  };
+
+  let resp;
+  try { resp = await callIveri(payload); } catch(e) {
+    document.getElementById('result-verify').innerHTML =
+      `<div class="result-banner error"><span class="icon">❌</span><div><strong>Lookup Error</strong>${e.message}</div></div>`;
+    setBusy('btn-verify','btnV-icon','btnV-text', false, '🔍','Retry Lookup');
+    return;
+  }
+
+  const tx  = resp.Enquiry?.TransactionStatus || resp.Enquiry || resp.Transaction || resp;
+  const ok  = tx?.Result?.Status === '0';
+  const banner = ok
+    ? `<div class="result-banner success"><span class="icon">✅</span><div>
+        <strong>Payment Verified!</strong>
+        Transaction confirmed on Nedbank side. Auth Code: <code>${tx?.AuthorisationCode || '—'}</code>
+       </div></div>`
+    : `<div class="result-banner error"><span class="icon">❌</span><div>
+        <strong>Verification Failed</strong>${tx?.Result?.Description || 'Unknown'}
+       </div></div>`;
+
+  document.getElementById('result-verify').innerHTML = banner + txDetails(tx) + renderJSON(payload, resp, 'verify');
+  setBusy('btn-verify','btnV-icon','btnV-text', false, ok ? '✅' : '🔍', ok ? 'Verified' : 'Retry Lookup');
+  if (ok) document.getElementById('btn-verify').disabled = true;
+}
+
+/* ── Render result inside a step ─────────────────── */
+function showResult(stepNum, req, resp, ok, finalOrMsg) {
+  const container = document.getElementById(`result-${stepNum}`);
+  const tx = resp?.Transaction || resp?.Enquiry || resp;
+  let banner = '';
+
+  if (typeof finalOrMsg === 'string') {
+    // error message
+    banner = `<div class="result-banner error"><span class="icon">❌</span><div><strong>Error</strong>${finalOrMsg}</div></div>`;
+  } else if (ok && finalOrMsg === true && stepNum === 4) {
+    // final payment success
+    banner = `<div class="result-banner success"><span class="icon">🎉</span><div>
+      <strong>Payment Complete!</strong>
+      Funds of <strong>${tx?.DisplayAmount || (cfg('cfg-amount')/100).toFixed(2)+' ZAR'}</strong> have been captured from the cardholder.
+      Auth Code: <code>${tx?.AuthorisationCode || '—'}</code>
+    </div></div>`;
+  } else if (ok) {
+    const msgs = [
+      'Card tokenized successfully. TransactionIndex stored.',
+      `Funds of <strong>${tx?.DisplayAmount || ''}</strong> reserved. Auth Code: <code>${tx?.AuthorisationCode || ''}</code>. TransactionIndex stored for reversal/capture.`,
+      `Pre-authorization reversed. Funds returned to cardholder's account.`,
+      `Second pre-authorization successful. TransactionIndex stored for final capture.`,
+    ];
+    banner = `<div class="result-banner success"><span class="icon">✅</span><div><strong>Success</strong>${msgs[stepNum] || ''}</div></div>`;
+  } else {
+    const desc = tx?.Result?.Description || 'Request failed';
+    banner = `<div class="result-banner error"><span class="icon">❌</span><div><strong>Failed</strong>${desc} (Code: ${tx?.Result?.Code || '?'})</div></div>`;
+  }
+
+  container.innerHTML = banner + txDetails(tx) + (resp ? renderJSON(req, resp, `${stepNum}`) : '');
+}
+
+/* ── Reset ───────────────────────────────────────── */
+function resetDemo() {
+  Object.assign(state, { panToken:null, authTxIndex:null, auth2TxIndex:null, debitTxIndex:null, refNum:0, traceNum:0 });
+  simulateOutcome = 'approve';
+  setOutcome('approve');
+
+  for (let i = 0; i < 5; i++) {
+    const card  = document.getElementById(`step-${i}`);
+    const badge = document.getElementById(`badge-${i}`);
+    const body  = document.getElementById(`body-${i}`);
+    const res   = document.getElementById(`result-${i}`);
+    const tl    = document.getElementById(`tl-${i}`);
+
+    card.className  = 'step-card ' + (i === 0 ? 'active' : 'skipped');
+    badge.className = 'step-status-badge ' + (i === 0 ? 'badge-active' : 'badge-pending');
+    badge.textContent = i === 0 ? 'Active' : 'Pending';
+    body.classList.toggle('open', i === 0);
+    if (res) res.innerHTML = '';
+    tl.classList.remove('done','active','error');
+    if (i === 0) tl.classList.add('active');
+
+    // hide countdowns & buttons
+    const cd = document.getElementById(`countdown-${i}`);
+    if (cd) cd.style.display = 'none';
+    const btn = document.getElementById(`btn-${i}`);
+    if (btn) {
+      btn.disabled = false;
+      btn.style.display = i === 0 ? 'flex' : 'none';
+    }
+  }
+  // step 0 btn always visible
+  document.getElementById('btn-0').style.display = 'flex';
+
+  // reset verify wrap
+  const vw = document.getElementById('verify-wrap');
+  if (vw) { vw.style.display = 'none'; }
+  const rv = document.getElementById('result-verify');
+  if (rv) rv.innerHTML = '';
+  const bv = document.getElementById('btn-verify');
+  if (bv) { bv.disabled = false; bv.style.display = 'flex'; }
+  const ot = document.getElementById('outcome-toggle-4');
+  if (ot) ot.style.display = 'flex';
+
+  // reset btn labels
+  const labels = [
+    ['btn0-icon','btn0-text','🔑','Tokenize Card & Start Flow'],
+    ['btn1-icon','btn1-text','🔒','Pre-Authorize (Reserve Funds)'],
+    ['btn2-icon','btn2-text','🔓','Release Authorization (Reversal)'],
+    ['btn3-icon','btn3-text','🔒','Pre-Authorize Again'],
+    ['btn4-icon','btn4-text','💳','Complete Payment (Capture Funds)'],
+  ];
+  labels.forEach(([icoId, txtId, ico, txt]) => {
+    const el = document.getElementById(icoId);
+    if (el) el.textContent = ico;
+    const el2 = document.getElementById(txtId);
+    if (el2) el2.textContent = txt;
+  });
+
+  toast('Demo reset ✓', 'info');
+}
+
+/* initial timeline highlight */
+document.getElementById('tl-0').classList.add('active');
+</script>
+</body>
+</html>

@@ -1,0 +1,2004 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>iVeri Enterprise Payment Flows · Nedbank</title>
+<style>
+/* ═══════════════════════════════════════════════════
+   RESET & VARIABLES
+═══════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* ── Nedbank Design System Palette ─────────────────── */
+  --100: #F8F9FA;    --200: #E9ECEF;    --300: #DEE2E6;
+  --400: #CED4DA;    --500: #ADB5BD;    --600: #6C757D;
+  --700: #495057;    --800: #343A40;    --900: #212529;
+  --white: #FFFFFF;  --black: #000000;
+  --white-85: rgba(255,255,255,0.85);  --white-75: rgba(255,255,255,0.75);
+  --white-50: rgba(255,255,255,0.5);   --white-25: rgba(255,255,255,0.25);
+  --black-75: rgba(0,0,0,0.75);        --black-50: rgba(0,0,0,0.5);
+  --black-25: rgba(0,0,0,0.25);        --black-15: rgba(0,0,0,0.15);
+
+  /* ── Brand Colours ─────────────────────────────────── */
+  --brand-primary:      #d89200;   /* amber / gold */
+  --brand-primary-dark: #A26E00;
+  --brand-primary-text: #212529;
+  --brand-secondary:    #9e0006;   /* deep red */
+  --brand-link:         #9b6900;
+
+  /* ── Typography Scale ──────────────────────────────── */
+  --font-size-base:  1rem;         --lead-font-size:  1.125rem;
+  --h1-font-size:  3.875rem;       --h2-font-size:  2.75rem;
+  --h3-font-size:  2.25rem;        --h4-font-size:  1.5rem;
+  --h5-font-size:  1.3125rem;      --h6-font-size:  1.125rem;
+  --small-font-size: 0.875em;
+  --o-system-fonts: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Ubuntu, "Noto Sans", Arial, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+
+  /* ── App Design Tokens (dark shell, palette-driven) ── */
+  --ned-green      : var(--brand-primary);
+  --ned-dark       : var(--brand-primary-dark);
+  --ned-light      : rgba(216,146,0,.12);
+  --ned-yellow     : var(--brand-primary);
+  --bg             : var(--900);           /* #212529 */
+  --surface        : var(--800);           /* #343A40 */
+  --surface2       : var(--700);           /* #495057 */
+  --border         : rgba(108,117,125,.4); /* --600 @ 40% */
+  --text           : var(--100);           /* #F8F9FA */
+  --text-muted     : var(--500);           /* #ADB5BD */
+  --success        : #22C55E;
+  --danger         : #EF4444;
+  --warning        : #F59E0B;
+  --info           : #3B82F6;
+  --radius         : 16px;
+  --shadow         : 0 8px 32px var(--black-50);
+  --transition     : .3s cubic-bezier(.4,0,.2,1);
+}
+
+html { font-size: 15px; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--o-system-fonts);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ═══════════════════════════════════════════════════
+   LAYOUT
+═══════════════════════════════════════════════════ */
+.app-wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 16px 60px;
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 28px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 28px;
+  box-shadow: var(--shadow);
+}
+.header-logo {
+  width: 48px;
+  height: 48px;
+  background: var(--ned-green);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 900;
+  color: #fff;
+  flex-shrink: 0;
+}
+.header-text h1 { font-size: 1.3rem; font-weight: 700; }
+.header-text p  { font-size: .82rem; color: var(--text-muted); margin-top: 2px; }
+.header-badge {
+  margin-left: auto;
+  background: rgba(216,146,0,.18);
+  color: var(--ned-green);
+  border: 1px solid rgba(216,146,0,.4);
+  border-radius: 20px;
+  padding: 4px 14px;
+  font-size: .78rem;
+  font-weight: 600;
+  letter-spacing: .5px;
+}
+
+/* ═══════════════════════════════════════════════════
+   CONFIG PANEL
+═══════════════════════════════════════════════════ */
+.config-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px 26px;
+  margin-bottom: 28px;
+  box-shadow: var(--shadow);
+}
+.config-panel h2 {
+  font-size: .95rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.config-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  gap: 12px;
+  align-items: end;
+}
+@media(max-width:700px) { .config-grid { grid-template-columns: 1fr 1fr; } }
+
+.field label {
+  display: block;
+  font-size: .75rem;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+.field input, .field select {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: var(--text);
+  font-size: .88rem;
+  outline: none;
+  transition: border-color var(--transition);
+}
+.field input:focus, .field select:focus { border-color: var(--ned-green); }
+.field select option { background: var(--surface2); }
+
+/* ═══════════════════════════════════════════════════
+   CARD ENTRY + CARD VISUAL (two-column)
+═══════════════════════════════════════════════════ */
+.card-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 28px;
+  align-items: start;
+}
+@media(max-width:700px) { .card-section { grid-template-columns: 1fr; } }
+
+/* credit card visual */
+.card-visual-wrap {
+  perspective: 1000px;
+  height: 200px;
+}
+.card-visual {
+  width: 100%;
+  height: 200px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, var(--brand-primary-dark) 0%, var(--brand-primary) 60%, #f5a800 100%);
+  box-shadow: 0 20px 60px rgba(216,146,0,.35);
+  padding: 22px 26px;
+  position: relative;
+  overflow: hidden;
+  transition: transform .5s cubic-bezier(.4,0,.2,1);
+  transform-style: preserve-3d;
+}
+.card-visual::before {
+  content: '';
+  position: absolute;
+  top: -60px; right: -60px;
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.07);
+}
+.card-visual::after {
+  content: '';
+  position: absolute;
+  bottom: -80px; left: -40px;
+  width: 240px; height: 240px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.05);
+}
+.card-chip {
+  width: 44px; height: 34px;
+  background: linear-gradient(135deg, #FFD100, #FFA500);
+  border-radius: 6px;
+  margin-bottom: 24px;
+  position: relative;
+  z-index:1;
+}
+.card-chip::before {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  width: 60%; height: 60%;
+  border: 1px solid rgba(0,0,0,.2);
+  border-radius: 3px;
+}
+.card-number-display {
+  font-size: 1.25rem;
+  letter-spacing: 3px;
+  font-family: 'Courier New', monospace;
+  color: rgba(255,255,255,.95);
+  margin-bottom: 20px;
+  position: relative;
+  z-index:1;
+}
+.card-meta {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  z-index:1;
+}
+.card-meta-group label {
+  display: block;
+  font-size: .6rem;
+  color: rgba(255,255,255,.6);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin-bottom: 3px;
+}
+.card-meta-group span {
+  font-size: .85rem;
+  color: #fff;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+.card-brand {
+  position: absolute;
+  top: 22px; right: 26px;
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: rgba(255,255,255,.85);
+  z-index:1;
+}
+
+/* card form */
+.card-form-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px 26px;
+  box-shadow: var(--shadow);
+}
+.card-form-panel h2 {
+  font-size: .95rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-grid .full { grid-column: 1 / -1; }
+
+/* quick-fill test card */
+.test-card-hint {
+  margin-top: 14px;
+  padding: 10px 14px;
+  background: rgba(216,146,0,.1);
+  border: 1px dashed rgba(216,146,0,.35);
+  border-radius: 10px;
+  font-size: .78rem;
+  color: var(--ned-green);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.test-card-hint button {
+  background: var(--ned-green);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: .75rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════
+   FLOW TIMELINE
+═══════════════════════════════════════════════════ */
+.timeline {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  margin-bottom: 28px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.timeline-step {
+  flex: 1;
+  min-width: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+.timeline-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 18px;
+  left: calc(50% + 20px);
+  right: calc(-50% + 20px);
+  height: 2px;
+  background: var(--border);
+  transition: background .4s;
+}
+.timeline-step.done:not(:last-child)::after { background: var(--ned-green); }
+
+.tl-dot {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--surface2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .85rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  position: relative;
+  z-index: 1;
+  transition: all .3s;
+}
+.timeline-step.active .tl-dot  { border-color: var(--ned-green); color: var(--ned-green); background: rgba(216,146,0,.15); box-shadow: 0 0 0 4px rgba(216,146,0,.15); }
+.timeline-step.done   .tl-dot  { border-color: var(--ned-green); background: var(--ned-green); color: #fff; }
+.timeline-step.error  .tl-dot  { border-color: var(--danger); background: var(--danger); color: #fff; }
+
+.tl-label {
+  font-size: .72rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-weight: 600;
+  line-height: 1.3;
+}
+.timeline-step.active .tl-label { color: var(--ned-green); }
+.timeline-step.done   .tl-label { color: var(--text); }
+
+/* ═══════════════════════════════════════════════════
+   STEP CARDS
+═══════════════════════════════════════════════════ */
+.step-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
+  transition: border-color .3s;
+}
+.step-card.active   { border-color: var(--ned-green); }
+.step-card.success  { border-color: var(--success); }
+.step-card.failed   { border-color: var(--danger); }
+.step-card.skipped  { opacity: .55; }
+
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 22px;
+  cursor: pointer;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+}
+.step-num {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .8rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.step-card.active  .step-num { background: var(--ned-green); color: #fff; }
+.step-card.success .step-num { background: var(--success);   color: #fff; }
+.step-card.failed  .step-num { background: var(--danger);    color: #fff; }
+
+.step-title { font-size: .95rem; font-weight: 700; flex: 1; }
+.step-subtitle { font-size: .78rem; color: var(--text-muted); margin-top: 2px; }
+
+.step-status-badge {
+  font-size: .72rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+.badge-pending  { background: rgba(255,255,255,.08); color: var(--text-muted); }
+.badge-active   { background: rgba(216,146,0,.2);   color: var(--ned-green); }
+.badge-success  { background: rgba(34,197,94,.2);   color: var(--success); }
+.badge-failed   { background: rgba(239,68,68,.2);   color: var(--danger); }
+.badge-waiting  { background: rgba(245,158,11,.2);  color: var(--warning); }
+
+.step-body {
+  padding: 22px;
+  display: none;
+}
+.step-body.open { display: block; }
+
+/* countdown ring */
+.countdown-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 0;
+}
+.countdown-ring {
+  position: relative;
+  width: 80px; height: 80px;
+}
+.countdown-ring svg { transform: rotate(-90deg); }
+.countdown-ring circle {
+  fill: none;
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+.ring-bg   { stroke: var(--border); }
+.ring-fill { stroke: var(--ned-green); transition: stroke-dashoffset .9s linear; }
+.countdown-num {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--ned-green);
+}
+.countdown-label { font-size: .82rem; color: var(--text-muted); }
+
+/* action button */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 26px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  font-size: .9rem;
+  font-weight: 700;
+  transition: all .2s;
+  text-decoration: none;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--ned-green), var(--ned-dark));
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(216,146,0,.35);
+}
+.btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(216,146,0,.5); }
+.btn-danger  { background: linear-gradient(135deg, #DC2626, #B91C1C); color: #fff; box-shadow: 0 4px 20px rgba(239,68,68,.3); }
+.btn-danger:hover:not(:disabled)  { transform: translateY(-2px); }
+.btn-warn    { background: linear-gradient(135deg, #D97706, #B45309); color: #fff; }
+.btn-success { background: linear-gradient(135deg, #16A34A, #15803D); color: #fff; }
+.btn:disabled { opacity: .45; cursor: not-allowed; transform: none !important; }
+.btn-full { width: 100%; justify-content: center; }
+.btn-sm { padding: 8px 16px; font-size: .8rem; }
+
+/* spinner */
+.spinner {
+  display: inline-block;
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── JSON viewer ── */
+.json-viewer-wrap {
+  margin-top: 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.json-tabs {
+  display: flex;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+.json-tab {
+  padding: 8px 18px;
+  font-size: .78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all .2s;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+.json-tab.active { color: var(--ned-green); border-bottom-color: var(--ned-green); }
+.json-pane {
+  display: none;
+  background: var(--900);
+  padding: 16px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.json-pane.active { display: block; }
+.json-pane pre {
+  font-family: 'Cascadia Code', 'Fira Code', monospace;
+  font-size: .78rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* JSON syntax colors */
+.json-key    { color: #79B8FF; }
+.json-string { color: #9ECBFF; }
+.json-number { color: #79DCAA; }
+.json-bool   { color: #F97583; }
+.json-null   { color: #F97583; }
+
+/* result banner */
+.result-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  margin-top: 16px;
+  font-size: .85rem;
+  line-height: 1.5;
+}
+.result-banner.success { background: rgba(34,197,94,.12);  border: 1px solid rgba(34,197,94,.3);  }
+.result-banner.error   { background: rgba(239,68,68,.12);  border: 1px solid rgba(239,68,68,.3);  }
+.result-banner.info    { background: rgba(59,130,246,.12); border: 1px solid rgba(59,130,246,.3); }
+.result-banner .icon   { font-size: 1.3rem; flex-shrink: 0; margin-top: 1px; }
+.result-banner strong  { display: block; font-size: .9rem; margin-bottom: 4px; }
+
+/* transaction details grid */
+.tx-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px,1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+.tx-item {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+.tx-item label {
+  display: block;
+  font-size: .68rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  margin-bottom: 4px;
+}
+.tx-item span {
+  font-size: .85rem;
+  font-weight: 600;
+  word-break: break-all;
+}
+.tx-item span.green  { color: var(--ned-green); }
+.tx-item span.yellow { color: var(--ned-yellow); }
+.tx-item span.red    { color: var(--danger); }
+
+/* ── Toast ── */
+#toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 10px;
+  z-index: 9999;
+}
+.toast {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 18px;
+  font-size: .83rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: var(--shadow);
+  animation: slideIn .3s ease;
+  max-width: 340px;
+}
+.toast.success { border-color: var(--success); }
+.toast.error   { border-color: var(--danger); }
+.toast.info    { border-color: var(--info); }
+@keyframes slideIn { from { transform: translateX(120%); opacity:0; } to { transform: translateX(0); opacity:1; } }
+
+/* divider */
+.divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+/* section heading */
+.section-heading {
+  font-size: .82rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-heading::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* reset all button */
+.reset-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 14px;
+}
+
+/* icon helper */
+.icon-circle {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  background: rgba(216,146,0,.15);
+  color: var(--ned-green);
+}
+
+/* ── Outcome toggle (step 4) ── */
+.outcome-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  background: rgba(255,255,255,.03);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.outcome-toggle > span { flex: 1 0 100%; margin-bottom: 4px; }
+.outcome-opt {
+  padding: 8px 20px;
+  border-radius: 8px;
+  background: var(--surface2);
+  border: 2px solid var(--border);
+  cursor: pointer;
+  font-size: .83rem;
+  font-weight: 700;
+  transition: all var(--transition);
+  user-select: none;
+  color: var(--text-muted);
+}
+.outcome-opt:hover { border-color: var(--text-muted); color: var(--text); }
+.outcome-opt.approve.selected { background: rgba(34,197,94,.15); border-color: var(--success); color: var(--success); }
+.outcome-opt.decline.selected { background: rgba(239,68,68,.15); border-color: var(--danger);  color: var(--danger);  }
+
+/* ── Verify button ── */
+.btn-info { background: linear-gradient(135deg, #2563eb, #3b82f6); }
+.btn-info:hover { background: linear-gradient(135deg, #1d4ed8, #2563eb); }
+
+/* ── Flow selector ── */
+.flow-selector {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px 26px;
+  margin-bottom: 28px;
+  box-shadow: var(--shadow);
+}
+.flow-selector h2 {
+  font-size: .95rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.flow-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media(max-width:600px){ .flow-cards { grid-template-columns: 1fr; } }
+.flow-card {
+  padding: 18px 20px;
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  cursor: pointer;
+  transition: all .25s;
+  background: var(--surface2);
+  user-select: none;
+}
+.flow-card:hover { border-color: var(--ned-green); }
+.flow-card.selected { border-color: var(--ned-green); background: rgba(216,146,0,.1); }
+.flow-card .fc-icon { font-size: 1.8rem; margin-bottom: 8px; }
+.flow-card .fc-title { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
+.flow-card .fc-sub   { font-size: .78rem; color: var(--text-muted); line-height: 1.5; }
+.flow-card .fc-steps { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.flow-card .fc-step  { font-size: .75rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+.flow-card .fc-step::before { content: '→'; color: var(--ned-green); font-weight: 700; }
+.flow-card.selected .fc-step { color: var(--text); }
+
+/* ── amount-increase input ── */
+.increase-row { display:flex; gap:10px; align-items:flex-end; margin-bottom:12px; }
+.increase-row .field { flex:1; }
+
+/* ── refund-type selector ── */
+.refund-type-row { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+.refund-opt {
+  padding: 8px 18px;
+  border-radius: 8px;
+  background: var(--surface2);
+  border: 2px solid var(--border);
+  cursor: pointer;
+  font-size: .8rem;
+  font-weight: 700;
+  transition: all .2s;
+  color: var(--text-muted);
+}
+.refund-opt.selected { background: rgba(216,146,0,.12); border-color: var(--ned-green); color: var(--ned-green); }
+
+/* note box */
+.note-box {
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: .8rem;
+  line-height: 1.55;
+  background: rgba(59,130,246,.1);
+  border: 1px solid rgba(59,130,246,.3);
+  color: #93C5FD;
+  margin-bottom: 14px;
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════ -->
+<div class="app-wrap">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-logo">iV</div>
+    <div class="header-text">
+      <h1>iVeri Enterprise Payment Flows</h1>
+      <p>Nedbank Enterprise Gateway · REST API v2.0 · portal.nedsecure.co.za</p>
+    </div>
+    <span class="header-badge">TEST MODE</span>
+  </header>
+
+  <!-- ── Config Panel ── -->
+  <section class="config-panel">
+    <h2><span class="icon-circle">⚙</span> Gateway Configuration</h2>
+    <div class="config-grid">
+      <div class="field">
+        <label>Application ID</label>
+        <input id="cfg-app-id" type="text" value="6d8d5a94-8fa0-428d-a539-3a5baf166f7f" />
+      </div>
+      <div class="field">
+        <label>Certificate ID</label>
+        <input id="cfg-cert-id" type="text" value="5c4b9c74-0063-4240-9cff-f730675c5bd0" />
+      </div>
+      <div class="field">
+        <label>Amount (ZAR cents)</label>
+        <input id="cfg-amount" type="number" value="5000" min="100" />
+        <span style="font-size:.7rem;color:var(--text-muted);margin-top:4px;display:block">5000 = R 50.00</span>
+      </div>
+      <div class="field">
+        <label>Mode</label>
+        <select id="cfg-mode">
+          <option value="Test" selected>Test</option>
+          <option value="Live">Live</option>
+        </select>
+      </div>
+      <div class="field" style="grid-column:1/-1">
+        <label>Authentication Type</label>
+        <select id="cfg-auth-type" onchange="toggleDigestAuth()">
+          <option value="legacy" selected>Legacy – CertificateID in body only</option>
+          <option value="digest">Digest – AuthenticationKey + AuthenticationToken headers</option>
+        </select>
+        <span style="font-size:.7rem;color:var(--text-muted);margin-top:4px;display:block">Digest auth requires setup via <a href="mailto:assist@iveri.co.za">assist@iveri.co.za</a>. Legacy is sufficient for test credentials.</span>
+      </div>
+      <div class="field" id="cfg-auth-secret-wrap" style="display:none;grid-column:1/-1">
+        <label>Authentication Secret <span style="font-size:.7rem;color:var(--text-muted)">(Backoffice → Authentication → Manage Secrets)</span></label>
+        <input id="cfg-auth-secret" type="password" placeholder="Paste your Authentication Secret here" autocomplete="off" />
+        <span style="font-size:.7rem;color:var(--text-muted);margin-top:4px;display:block">⚠ Copy immediately after generation — it is only readable in plain text for a few minutes.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Card Section ── -->
+  <section class="card-section">
+
+    <!-- Credit Card Visual -->
+    <div>
+      <div class="section-heading">💳 Card Preview</div>
+      <div class="card-visual-wrap">
+        <div class="card-visual" id="cardVisual">
+          <div class="card-chip"></div>
+          <div class="card-number-display" id="displayPan">•••• •••• •••• ••••</div>
+          <div class="card-meta">
+            <div class="card-meta-group">
+              <label>Card Holder</label>
+              <span id="displayName">FULL NAME</span>
+            </div>
+            <div class="card-meta-group">
+              <label>Expires</label>
+              <span id="displayExpiry">MM/YY</span>
+            </div>
+          </div>
+          <div class="card-brand" id="displayBrand">VISA</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card Form -->
+    <div class="card-form-panel">
+      <h2><span class="icon-circle">✎</span> Enter Card Details</h2>
+      <div class="form-grid">
+        <div class="field full">
+          <label>Card Number</label>
+          <input id="f-pan" type="text" maxlength="19" placeholder="0000 0000 0000 0000" autocomplete="off" />
+        </div>
+        <div class="field full">
+          <label>Cardholder Name</label>
+          <input id="f-name" type="text" placeholder="John Doe" autocomplete="off" />
+        </div>
+        <div class="field">
+          <label>Expiry (MMYY)</label>
+          <input id="f-expiry" type="text" maxlength="4" placeholder="1226" />
+        </div>
+        <div class="field">
+          <label>CVV / CVV2</label>
+          <input id="f-cvv" type="text" maxlength="4" placeholder="123" autocomplete="off" />
+        </div>
+      </div>
+      <div class="test-card-hint">
+        <span>🧪 Use test card <strong>4242 4242 4242 4242</strong> · Exp <strong>1226</strong> · CVV <strong>123</strong></span>
+        <button onclick="fillTestCard()">Auto-fill</button>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ════════════════════════
+       FLOW SELECTOR
+  ════════════════════════ -->
+  <section class="flow-selector">
+    <h2><span class="icon-circle">⚡</span> Select Payment Flow</h2>
+    <div class="flow-cards">
+      <div class="flow-card selected" id="fc-preauth" onclick="selectFlow('preauth')">
+        <div class="fc-icon">🔒</div>
+        <div class="fc-title">Pre-Authorisation Flow</div>
+        <div class="fc-sub">Reserve funds now, capture or release later. Best for bookings/orders where the final amount may change.</div>
+        <div class="fc-steps">
+          <div class="fc-step">Authorisation (Command: <code>Authorisation</code>)</div>
+          <div class="fc-step">Store returned <code>TransactionIndex</code></div>
+          <div class="fc-step">Increase amount — Additional Authorisation (optional)</div>
+          <div class="fc-step">Capture — <code>Debit</code> with TransactionIndex</div>
+          <div class="fc-step">OR Cancel — <code>AuthorisationReversal</code> with TransactionIndex</div>
+          <div class="fc-step">Refund later — <code>Credit</code> with TransactionIndex</div>
+        </div>
+      </div>
+      <div class="flow-card" id="fc-prepay" onclick="selectFlow('prepay')">
+        <div class="fc-icon">💳</div>
+        <div class="fc-title">Prepayment Flow (Immediate Debit)</div>
+        <div class="fc-sub">Take payment immediately. Customer pays upfront before service/booking is confirmed.</div>
+        <div class="fc-steps">
+          <div class="fc-step">Immediate payment — Command: <code>Debit</code> with PAN</div>
+          <div class="fc-step">Store full payment response &amp; <code>TransactionIndex</code></div>
+          <div class="fc-step">Mark order as paid only if <code>Status = 0</code> (Approved)</div>
+          <div class="fc-step">Refund later — <code>Credit</code> with TransactionIndex</div>
+        </div>
+      </div>
+    </div>
+    <p style="margin-top:12px;font-size:.78rem;color:var(--text-muted);">
+      ℹ️ <strong>iVeri Enterprise Guide (Section: Actions):</strong>
+      <em>Authorisation</em> (also known as "Preauthorisation") reserves funds.
+      <em>Debit</em> (also known as "Sale" or "Purchase") transfers funds immediately.
+      <em>Credit</em> (also known as "Refund" or "Pay") returns funds to the cardholder.
+    </p>
+  </section>
+
+  <!-- ── Timeline ── -->
+  <div class="section-heading" id="flow-heading">🔒 Pre-Authorisation Flow — iVeri Enterprise</div>
+  <div class="timeline" id="timeline"><!-- rendered by JS --></div>
+
+  <!-- ── Reset ── -->
+  <div class="reset-bar">
+    <button class="btn btn-sm" onclick="resetDemo()" style="background:var(--surface2);border:1px solid var(--border);">↺ Reset Demo</button>
+  </div>
+
+  <!-- ════════════════════════
+       STEPS CONTAINER
+       All step cards are rendered/shown by JS based on selected flow
+  ════════════════════════ -->
+  <div id="steps-container"></div>
+
+</div><!-- /.app-wrap -->
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<!-- ════════════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════════════ -->
+<script>
+/* ═══════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════ */
+const state = {
+  flow          : 'preauth',   // 'preauth' | 'prepay'
+  authTxIndex   : null,   // TransactionIndex from initial Authorisation (pre-auth flow)
+  authMaskedPAN : null,   // masked PAN returned by gateway (e.g. "4242........4242")
+  authExpiry    : null,   // ExpiryDate returned by gateway (e.g. "122025")
+  addAuthAmount : 0,      // amount after Additional Authorisation
+  debitTxIndex  : null,   // TransactionIndex from Debit (either flow)
+  ppMaskedPAN   : null,   // masked PAN from prepayment Debit response
+  ppExpiry      : null,   // ExpiryDate from prepayment Debit response
+  refNum        : 0,
+  traceNum      : 0,
+};
+
+function nextRef()   { state.refNum++;   return `DEMO${Date.now().toString().slice(-6)}_${state.refNum}`; }
+function nextTrace() { state.traceNum++; return `TRC${Date.now().toString().slice(-8)}_${state.traceNum}`; }
+
+/* ═══════════════════════════════════════════════
+   FLOW DEFINITIONS
+   Each flow is an ordered list of step descriptors.
+═══════════════════════════════════════════════ */
+const FLOWS = {
+  preauth: {
+    label: '🔒 Pre-Authorisation Flow — iVeri Enterprise',
+    steps: [
+      { id:'pa-auth',    num:1, title:'Pre-Authorise (Reserve Funds)',          sub:'Command: <code>Authorisation</code> · Reserves/holds funds on cardholder account. No money taken yet.',           tlLabel:'Authorisation<br/>(Reserve)',    color:'primary' },
+      { id:'pa-addauth', num:2, title:'Additional Authorisation (Optional)',     sub:'Command: <code>Authorisation</code> + TransactionIndex · Increases the previously reserved amount.',               tlLabel:'Additional<br/>Auth (optional)', color:'warn' },
+      { id:'pa-capture', num:3, title:'Capture Payment (Debit)',                 sub:'Command: <code>Debit</code> + TransactionIndex · Transfers the reserved funds from cardholder to merchant.',       tlLabel:'Debit<br/>(Capture)',            color:'success' },
+      { id:'pa-reverse', num:3, title:'— OR — Cancel / Release Hold',           sub:'Command: <code>AuthorisationReversal</code> + TransactionIndex · Releases the hold, no funds taken.',              tlLabel:'AuthReversal<br/>(Cancel)',      color:'danger', alternate:true },
+      { id:'pa-refund',  num:4, title:'Refund (Optional)',                       sub:'Command: <code>Credit</code> + TransactionIndex · Returns already-captured funds to cardholder.',                  tlLabel:'Credit<br/>(Refund)',            color:'info' },
+    ],
+  },
+  prepay: {
+    label: '💳 Prepayment Flow (Immediate Debit) — iVeri Enterprise',
+    steps: [
+      { id:'pp-debit',  num:1, title:'Immediate Payment (Debit)',               sub:'Command: <code>Debit</code> with PAN · Takes payment immediately. Funds transferred at this point.',               tlLabel:'Debit<br/>(Pay Now)',            color:'success' },
+      { id:'pp-verify', num:2, title:'Verify Payment Status',                   sub:'Command: <code>TransactionStatus</code> enquiry · Server-side confirmation. Mark order as paid ONLY if approved.', tlLabel:'Verify<br/>Status',              color:'info' },
+      { id:'pp-refund', num:3, title:'Refund (Optional)',                        sub:'Command: <code>Credit</code> + TransactionIndex · Return the upfront payment to the cardholder.',                 tlLabel:'Credit<br/>(Refund)',            color:'info' },
+    ],
+  },
+};
+
+/* ═══════════════════════════════════════════════
+   RENDER STEPS
+═══════════════════════════════════════════════ */
+function renderTimeline(flowKey) {
+  const flow = FLOWS[flowKey];
+  const tl   = document.getElementById('timeline');
+  // filter alternate steps from timeline (they share a slot)
+  const tlSteps = flow.steps.filter(s => !s.alternate);
+  tl.innerHTML = tlSteps.map((s,i) => `
+    <div class="timeline-step${i===0?' active':''}" id="tl-${s.id}">
+      <div class="tl-dot">${i+1}</div>
+      <div class="tl-label">${s.tlLabel}</div>
+    </div>`).join('');
+  document.getElementById('flow-heading').textContent = flow.label;
+}
+
+function renderSteps(flowKey) {
+  const sc = document.getElementById('steps-container');
+  if (flowKey === 'preauth') {
+    sc.innerHTML = htmlPreauthSteps();
+  } else {
+    sc.innerHTML = htmlPrepaySteps();
+  }
+}
+
+/* ── Pre-Auth HTML steps ── */
+function htmlPreauthSteps() {
+  return `
+  <!-- STEP PA-1: Authorisation with PAN -->
+  <div class="step-card active" id="step-pa-auth">
+    <div class="step-header" onclick="toggleStepEl('body-pa-auth','chev-pa-auth')">
+      <div class="step-num">1</div>
+      <div style="flex:1">
+        <div class="step-title">Pre-Authorise (Reserve Funds)</div>
+        <div class="step-subtitle">Command: <code>Authorisation</code> — reserves/holds funds without capturing. Funds are NOT debited yet.</div>
+      </div>
+      <span class="step-status-badge badge-active" id="badge-pa-auth">Active</span>
+      <span style="color:var(--text-muted);margin-left:8px;" id="chev-pa-auth">▾</span>
+    </div>
+    <div class="step-body open" id="body-pa-auth">
+      <div class="note-box">
+        📌 <strong>iVeri Enterprise — Authorisation:</strong> Causes a reservation of funds on the cardholder's account.
+        This is the pre-authorisation step. The returned <code>TransactionIndex</code> must be stored for all follow-up actions (Debit, Reversal, Additional Auth).
+      </div>
+      <button class="btn btn-primary btn-full" id="btn-pa-auth" onclick="runPaAuth()">
+        <span id="ico-pa-auth">🔒</span>
+        <span id="lbl-pa-auth">Pre-Authorise (Reserve Funds)</span>
+      </button>
+      <div id="res-pa-auth"></div>
+    </div>
+  </div>
+
+  <!-- STEP PA-2: Additional Authorisation (optional) -->
+  <div class="step-card skipped" id="step-pa-addauth">
+    <div class="step-header" onclick="toggleStepEl('body-pa-addauth','chev-pa-addauth')">
+      <div class="step-num">2</div>
+      <div style="flex:1">
+        <div class="step-title">Additional Authorisation — Increase Reserved Amount (Optional)</div>
+        <div class="step-subtitle">Command: <code>Authorisation</code> + TransactionIndex — increases the amount previously reserved via iVeri.</div>
+      </div>
+      <span class="step-status-badge badge-pending" id="badge-pa-addauth">Optional</span>
+      <span style="color:var(--text-muted);margin-left:8px;" id="chev-pa-addauth">▾</span>
+    </div>
+    <div class="step-body" id="body-pa-addauth">
+      <div class="note-box">
+        📌 <strong>iVeri Enterprise — Additional Authorisation with TransactionIndex:</strong>
+        Increase the amount previously reserved via iVeri by an additional amount.
+        Note: The addition of funds reserved <em>outside</em> the iVeri Gateway is not supported.
+        Use the original <code>TransactionIndex</code> from Step 1.
+      </div>
+      <div class="increase-row">
+        <div class="field">
+          <label>Additional Amount (ZAR cents)</label>
+          <input id="addauth-amount" type="number" value="2000" min="100" placeholder="2000 = R20.00" />
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-warn" id="btn-pa-addauth" onclick="runPaAddAuth()" style="flex:1">
+          <span id="ico-pa-addauth">➕</span>
+          <span id="lbl-pa-addauth">Run Additional Authorisation</span>
+        </button>
+        <button class="btn" style="flex:1;background:var(--surface2);border:1px solid var(--border)" onclick="skipAddAuth()">
+          ⏭ Skip — proceed to Capture/Release
+        </button>
+      </div>
+      <div id="res-pa-addauth"></div>
+    </div>
+  </div>
+
+  <!-- STEP PA-3a/b: Capture OR Release -->
+  <div class="step-card skipped" id="step-pa-action">
+    <div class="step-header" onclick="toggleStepEl('body-pa-action','chev-pa-action')">
+      <div class="step-num">3</div>
+      <div style="flex:1">
+        <div class="step-title">Capture Payment OR Release Hold</div>
+        <div class="step-subtitle">Choose: capture the reserved funds (<code>Debit</code>) or release the hold (<code>AuthorisationReversal</code>)</div>
+      </div>
+      <span class="step-status-badge badge-pending" id="badge-pa-action">Pending</span>
+      <span style="color:var(--text-muted);margin-left:8px;" id="chev-pa-action">▾</span>
+    </div>
+    <div class="step-body" id="body-pa-action">
+      <div class="note-box">
+        📌 Choose one action. Both use the <code>TransactionIndex</code> stored in Step 1.<br/>
+        <strong>Debit with TransactionIndex</strong> = capture/transfer the reserved funds to the merchant.<br/>
+        <strong>AuthorisationReversal with TransactionIndex</strong> = release/cancel the hold; no funds taken.
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:0;">
+        <div>
+          <p style="font-size:.75rem;font-weight:700;color:var(--success);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">✅ Booking Confirmed — Capture</p>
+          <button class="btn btn-success btn-full" id="btn-pa-capture" onclick="runPaCapture()">
+            <span id="ico-pa-capture">💳</span>
+            <span id="lbl-pa-capture">Debit with TransactionIndex (Capture)</span>
+          </button>
+          <div id="res-pa-capture"></div>
+        </div>
+        <div>
+          <p style="font-size:.75rem;font-weight:700;color:var(--danger);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">❌ Booking Cancelled — Release Hold</p>
+          <button class="btn btn-danger btn-full" id="btn-pa-reverse" onclick="runPaReverse()">
+            <span id="ico-pa-reverse">🔓</span>
+            <span id="lbl-pa-reverse">AuthorisationReversal (Release Hold)</span>
+          </button>
+          <div id="res-pa-reverse"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP PA-4: Refund (Credit with TransactionIndex) -->
+  <div class="step-card skipped" id="step-pa-refund">
+    <div class="step-header" onclick="toggleStepEl('body-pa-refund','chev-pa-refund')">
+      <div class="step-num">4</div>
+      <div style="flex:1">
+        <div class="step-title">Refund — Credit with TransactionIndex (Optional)</div>
+        <div class="step-subtitle">Command: <code>Credit</code> + TransactionIndex — returns captured funds to cardholder. Available for 6 months after original transaction.</div>
+      </div>
+      <span class="step-status-badge badge-pending" id="badge-pa-refund">Optional</span>
+      <span style="color:var(--text-muted);margin-left:8px;" id="chev-pa-refund">▾</span>
+    </div>
+    <div class="step-body" id="body-pa-refund">
+      <div class="note-box">
+        📌 <strong>iVeri Enterprise — Credit with TransactionIndex:</strong>
+        Transfer of funds from merchant to cardholder. Follow-up of a previously processed Debit.
+        Applies where a full or partial refund of the original transaction is required.<br/>
+        ⚠️ The iVeri Gateway retains transaction history for <strong>6 months</strong> only.
+        Beyond that, use a standalone Credit with full PAN details.
+      </div>
+      <div class="refund-type-row">
+        <div class="refund-opt selected" id="ro-full"    onclick="setRefundType('full','pa')">Full Refund</div>
+        <div class="refund-opt"          id="ro-partial" onclick="setRefundType('partial','pa')">Partial Refund</div>
+      </div>
+      <div id="partial-amount-wrap-pa" style="display:none;margin-bottom:12px;">
+        <div class="field">
+          <label>Refund Amount (ZAR cents)</label>
+          <input id="refund-amount-pa" type="number" placeholder="e.g. 2500 = R25.00" min="1" />
+        </div>
+      </div>
+      <button class="btn btn-info btn-full" id="btn-pa-refund" onclick="runPaRefund()">
+        <span id="ico-pa-refund">↩</span>
+        <span id="lbl-pa-refund">Issue Refund (Credit)</span>
+      </button>
+      <div id="res-pa-refund"></div>
+    </div>
+  </div>`;
+}
+
+/* ── Prepay HTML steps ── */
+function htmlPrepaySteps() {
+  return `
+  <!-- STEP PP-1: Immediate Debit -->
+  <div class="step-card active" id="step-pp-debit">
+    <div class="step-header" onclick="toggleStepEl('body-pp-debit','chev-pp-debit')">
+      <div class="step-num">1</div>
+      <div style="flex:1">
+        <div class="step-title">Immediate Payment — Debit with PAN</div>
+        <div class="step-subtitle">Command: <code>Debit</code> — transfers funds from cardholder to merchant immediately. This IS the final payment.</div>
+      </div>
+      <span class="step-status-badge badge-active" id="badge-pp-debit">Active</span>
+      <span style="color:var(--text-muted);margin-left:8px;" id="chev-pp-debit">▾</span>
+    </div>
+    <div class="step-body open" id="body-pp-debit">
+      <div class="note-box">
+        📌 <strong>iVeri Enterprise — Debit (Sale/Purchase):</strong>
+        Causes a transfer of funds from the cardholder to the merchant.
+        This is different from Authorisation — the money is taken immediately.
+        Store the full response including <code>TransactionIndex</code>, <code>AuthorisationCode</code>, and <code>Result.Status</code>.
+        Mark the order as paid <strong>only if <code>Status = 0</code> (Approved)</strong>.
+      </div>
+      <div class="outcome-toggle" id="pp-outcome-toggle">
+        <span style="font-size:.75rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;">🎮 Simulate outcome:</span>
+        <div class="outcome-opt approve selected" id="pp-opt-approve" onclick="setPpOutcome('approve')">✅ Approve</div>
+        <div class="outcome-opt decline"          id="pp-opt-decline" onclick="setPpOutcome('decline')">❌ Decline</div>
+      </div>
+      <button class="btn btn-success btn-full" id="btn-pp-debit" onclick="runPpDebit()">
+        <span id="ico-pp-debit">💳</span>
+        <span id="lbl-pp-debit">Pay Now (Debit)</span>
+      </button>
+      <div id="res-pp-debit"></div>
+    </div>
+  </div>
+
+  <!-- STEP PP-2: Verify (TransactionStatus) -->
+  <div class="step-card skipped" id="step-pp-verify">
+    <div class="step-header" onclick="toggleStepEl('body-pp-verify','chev-pp-verify')">
+      <div class="step-num">2</div>
+      <div style="flex:1">
+        <div class="step-title">Verify Payment Status</div>
+        <div class="step-subtitle">Command: <code>TransactionStatus</code> — server-side confirmation of transaction result via TransactionIndex</div>
+      </div>
+      <span class="step-status-badge badge-pending" id="badge-pp-verify">Pending</span>
+      <span style="color:var(--text-muted);margin-left:8px;" id="chev-pp-verify">▾</span>
+    </div>
+    <div class="step-body" id="body-pp-verify">
+      <div class="note-box">
+        📌 <strong>iVeri Enterprise — TransactionStatus enquiry:</strong>
+        Query the transaction using the <code>TransactionIndex</code> returned in Step 1.
+        This allows server-side verification independent of the payment response.
+        Mark order as paid ONLY if the status confirms <code>Status = 0</code>.
+      </div>
+      <button class="btn btn-info btn-full" id="btn-pp-verify" onclick="runPpVerify()">
+        <span id="ico-pp-verify">🔍</span>
+        <span id="lbl-pp-verify">Verify Payment (TransactionStatus)</span>
+      </button>
+      <div id="res-pp-verify"></div>
+    </div>
+  </div>
+
+  <!-- STEP PP-3: Refund (Credit with TransactionIndex) -->
+  <div class="step-card skipped" id="step-pp-refund">
+    <div class="step-header" onclick="toggleStepEl('body-pp-refund','chev-pp-refund')">
+      <div class="step-num">3</div>
+      <div style="flex:1">
+        <div class="step-title">Refund — Credit with TransactionIndex (Optional)</div>
+        <div class="step-subtitle">Command: <code>Credit</code> + TransactionIndex — returns the payment to the cardholder.</div>
+      </div>
+      <span class="step-status-badge badge-pending" id="badge-pp-refund">Optional</span>
+      <span style="color:var(--text-muted);margin-left:8px;" id="chev-pp-refund">▾</span>
+    </div>
+    <div class="step-body" id="body-pp-refund">
+      <div class="note-box">
+        📌 <strong>iVeri Enterprise — Credit with TransactionIndex:</strong>
+        Transfer of funds from merchant to cardholder linked to the original Debit transaction.
+        ⚠️ Transaction history is retained for <strong>6 months</strong>. Beyond that, use a standalone Credit with full PAN details.
+      </div>
+      <div class="refund-type-row">
+        <div class="refund-opt selected" id="pp-ro-full"    onclick="setRefundType('full','pp')">Full Refund</div>
+        <div class="refund-opt"          id="pp-ro-partial" onclick="setRefundType('partial','pp')">Partial Refund</div>
+      </div>
+      <div id="partial-amount-wrap-pp" style="display:none;margin-bottom:12px;">
+        <div class="field">
+          <label>Refund Amount (ZAR cents)</label>
+          <input id="refund-amount-pp" type="number" placeholder="e.g. 2500 = R25.00" min="1" />
+        </div>
+      </div>
+      <button class="btn btn-info btn-full" id="btn-pp-refund" onclick="runPpRefund()">
+        <span id="ico-pp-refund">↩</span>
+        <span id="lbl-pp-refund">Issue Refund (Credit)</span>
+      </button>
+      <div id="res-pp-refund"></div>
+    </div>
+  </div>`;
+}
+
+/* ═══════════════════════════════════════════════
+   FLOW SELECTOR
+═══════════════════════════════════════════════ */
+function selectFlow(flowKey) {
+  if (state.flow === flowKey) return;
+  state.flow = flowKey;
+  document.getElementById('fc-preauth').classList.toggle('selected', flowKey === 'preauth');
+  document.getElementById('fc-prepay').classList.toggle('selected',  flowKey === 'prepay');
+  // reset state
+  state.authTxIndex = null;
+  state.debitTxIndex = null;
+  state.addAuthAmount = 0;
+  renderTimeline(flowKey);
+  renderSteps(flowKey);
+  toast(`Flow switched to: ${FLOWS[flowKey].label}`, 'info');
+}
+
+/* ═══════════════════════════════════════════════
+   CARD VISUAL
+═══════════════════════════════════════════════ */
+const fPan    = document.getElementById('f-pan');
+const fName   = document.getElementById('f-name');
+const fExpiry = document.getElementById('f-expiry');
+
+fPan.addEventListener('input', () => {
+  let val = fPan.value.replace(/\D/g,'').slice(0,16);
+  fPan.value = val.replace(/(.{4})/g,'$1 ').trim();
+  const padded = val.padEnd(16,'•');
+  document.getElementById('displayPan').textContent =
+    `${padded.slice(0,4)} ${padded.slice(4,8)} ${padded.slice(8,12)} ${padded.slice(12,16)}`;
+  const brand = val[0]==='4' ? 'VISA' : val[0]==='5' ? 'MC' : val[0]==='3' ? 'AMEX' : '';
+  document.getElementById('displayBrand').textContent = brand;
+});
+fName.addEventListener('input', () => {
+  document.getElementById('displayName').textContent = fName.value.toUpperCase() || 'FULL NAME';
+});
+fExpiry.addEventListener('input', () => {
+  const v = fExpiry.value.replace(/\D/g,'').slice(0,4);
+  fExpiry.value = v;
+  document.getElementById('displayExpiry').textContent =
+    v.length>=2 ? `${v.slice(0,2)}/${v.slice(2)||'YY'}` : 'MM/YY';
+});
+
+function fillTestCard() {
+  fPan.value    = '4242 4242 4242 4242';
+  fName.value   = 'Test Cardholder';
+  fExpiry.value = '1226';
+  document.getElementById('f-cvv').value = '123';
+  fPan.dispatchEvent(new Event('input'));
+  fName.dispatchEvent(new Event('input'));
+  fExpiry.dispatchEvent(new Event('input'));
+  toast('Test card filled ✓', 'success');
+}
+
+/* ═══════════════════════════════════════════════
+   UTILS
+═══════════════════════════════════════════════ */
+function cfg(id) { return document.getElementById(id).value.trim(); }
+
+function buildBase(command, isEnquiry=false) {
+  const section = isEnquiry ? 'Enquiry' : 'Transaction';
+  return {
+    Version        : '2.0',
+    CertificateID  : `{${cfg('cfg-cert-id')}}`,
+    ProductType    : 'Enterprise',
+    ProductVersion : 'WebAPI',
+    Direction      : 'Request',
+    [section]      : {
+      ApplicationID : `{${cfg('cfg-app-id')}}`,
+      Command       : command,
+      Mode          : cfg('cfg-mode'),
+    },
+  };
+}
+
+const PROXY_URL = 'http://localhost:3000/api/iveri';
+
+function toggleDigestAuth() {
+  const isDigest = document.getElementById('cfg-auth-type').value === 'digest';
+  document.getElementById('cfg-auth-secret-wrap').style.display = isDigest ? '' : 'none';
+}
+
+async function callIveri(payload) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (document.getElementById('cfg-auth-type').value === 'digest') {
+    const secret = cfg('cfg-auth-secret');
+    const certId = cfg('cfg-cert-id');
+    if (secret) {
+      headers['X-iVeri-Auth-Secret'] = secret;
+      headers['X-iVeri-Cert-ID']     = certId;
+    }
+  }
+  const resp = await fetch(PROXY_URL, { method:'POST', headers, body:JSON.stringify(payload) });
+  if (!resp.ok && resp.headers.get('content-length') === '0')
+    throw new Error(`Server returned ${resp.status} with empty body — is the Node server running on port 3000?`);
+  const text = await resp.text();
+  if (!text) throw new Error('Empty response — run: npm start');
+  try { return JSON.parse(text); } catch { throw new Error(`Invalid JSON: ${text.slice(0,120)}`); }
+}
+
+function getPAN()    { return fPan.value.replace(/\s/g,''); }
+function getExpiry() { return fExpiry.value.replace(/\D/g,''); }
+function getCVV()    { return document.getElementById('f-cvv').value.trim(); }
+function getName()   { return fName.value.trim(); }
+
+function validate() {
+  if (!cfg('cfg-cert-id'))   { toast('Please enter your Certificate ID', 'error'); return false; }
+  if (getPAN().length < 13)  { toast('Please enter a valid card number', 'error'); return false; }
+  if (getExpiry().length < 4){ toast('Please enter a valid expiry date (MMYY)', 'error'); return false; }
+  return true;
+}
+
+/* ═══════════════════════════════════════════════
+   JSON RENDERING
+═══════════════════════════════════════════════ */
+function highlight(obj) {
+  const json = JSON.stringify(obj, null, 2);
+  return json.replace(
+    /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+    match => {
+      if (/^"/.test(match)) {
+        if (/:$/.test(match)) return `<span class="json-key">${match}</span>`;
+        return `<span class="json-string">${match}</span>`;
+      }
+      if (/true|false/.test(match)) return `<span class="json-bool">${match}</span>`;
+      if (/null/.test(match))       return `<span class="json-null">${match}</span>`;
+      return `<span class="json-number">${match}</span>`;
+    }
+  );
+}
+
+function renderJSON(req, resp, uid) {
+  return `
+  <div class="json-viewer-wrap">
+    <div class="json-tabs">
+      <div class="json-tab active" id="tab-req-${uid}"  onclick="switchTab('${uid}','req')">📤 Request</div>
+      <div class="json-tab"        id="tab-resp-${uid}" onclick="switchTab('${uid}','resp')">📥 Response</div>
+    </div>
+    <div class="json-pane active" id="req-${uid}"><pre>${highlight(req)}</pre></div>
+    <div class="json-pane"        id="resp-${uid}"><pre>${resp ? highlight(resp) : '<span style="color:var(--text-muted)">Awaiting response…</span>'}</pre></div>
+  </div>`;
+}
+
+function switchTab(id, tab) {
+  document.getElementById(`req-${id}`).classList.toggle('active', tab==='req');
+  document.getElementById(`resp-${id}`).classList.toggle('active', tab==='resp');
+  document.getElementById(`tab-req-${id}`).classList.toggle('active', tab==='req');
+  document.getElementById(`tab-resp-${id}`).classList.toggle('active', tab==='resp');
+}
+
+function txDetails(tx) {
+  if (!tx) return '';
+  const fields = [
+    ['Status',         tx.Result?.Status === '0' ? '✅ Approved' : '❌ ' + (tx.Result?.Description||'Declined'), tx.Result?.Status === '0' ? 'green' : 'red'],
+    ['Auth Code',      tx.AuthorisationCode, 'green'],
+    ['Amount',         tx.DisplayAmount || (tx.Amount ? `${(tx.Amount/100).toFixed(2)} ${tx.Currency||''}` : '-')],
+    ['Currency',       tx.Currency],
+    ['Card (masked)',  tx.CCNumber || tx.PAN],
+    ['Expiry',         tx.ExpiryDate],
+    ['Association',    tx.Association],
+    ['TX Index',       tx.TransactionIndex, 'yellow'],
+    ['Command',        tx.Command],
+    ['Acquirer',       tx.Acquirer],
+    ['Acq Reference',  tx.AcquirerReference],
+    ['Request ID',     tx.RequestID],
+  ].filter(([,v]) => v);
+  return `<div class="tx-details">${fields.map(([l,v,cls=''])=>`
+    <div class="tx-item"><label>${l}</label><span class="${cls}">${v}</span></div>`).join('')}</div>`;
+}
+
+/* ═══════════════════════════════════════════════
+   UI HELPERS
+═══════════════════════════════════════════════ */
+function toggleStepEl(bodyId, chevId) {
+  const body = document.getElementById(bodyId);
+  const chev = document.getElementById(chevId);
+  if (!body) return;
+  const open = body.classList.contains('open');
+  body.classList.toggle('open', !open);
+  if (chev) chev.textContent = open ? '▸' : '▾';
+}
+
+function markStepEl(stepId, st) {
+  const card  = document.getElementById(`step-${stepId}`);
+  const badge = document.getElementById(`badge-${stepId}`);
+  const tl    = document.getElementById(`tl-${stepId}`);
+  if (!card) return;
+  card.className  = `step-card ${st}`;
+  const labels = { active:'Active', success:'Done', failed:'Failed', skipped:'Pending', waiting:'Waiting' };
+  if (badge) { badge.className = `step-status-badge badge-${st}`; badge.textContent = labels[st] || st; }
+  if (tl) {
+    tl.classList.toggle('done',  st==='success');
+    tl.classList.toggle('active',st==='active');
+    tl.classList.toggle('error', st==='failed');
+  }
+}
+
+function activateStepEl(stepId) {
+  const card = document.getElementById(`step-${stepId}`);
+  if (!card) return;
+  card.classList.remove('skipped');
+  markStepEl(stepId, 'active');
+  document.getElementById(`body-${stepId}`)?.classList.add('open');
+  card.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function setBusyEl(btnId, icoId, lblId, busy, icon='', label='') {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  btn.disabled = busy;
+  const icoEl = document.getElementById(icoId);
+  const lblEl = document.getElementById(lblId);
+  if (busy) {
+    if (icoEl) icoEl.innerHTML = '<span class="spinner"></span>';
+    if (lblEl) lblEl.textContent = 'Processing…';
+  } else {
+    if (icoEl) icoEl.textContent = icon;
+    if (lblEl) lblEl.textContent = label;
+  }
+}
+
+function toast(msg, type='info') {
+  const icons = { success:'✅', error:'❌', info:'ℹ️' };
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span>${icons[type]||'ℹ️'}</span> <span>${msg}</span>`;
+  document.getElementById('toast-container').prepend(el);
+  setTimeout(() => el.remove(), 4500);
+}
+
+function banner(type, title, body) {
+  const icons = { success:'✅', error:'❌', info:'ℹ️', warning:'⚠️' };
+  return `<div class="result-banner ${type}">
+    <span class="icon">${icons[type]||'ℹ️'}</span>
+    <div><strong>${title}</strong> ${body}</div>
+  </div>`;
+}
+
+function showRes(resId, req, resp, ok, titleOk, bodyOk, titleFail) {
+  const container = document.getElementById(resId);
+  if (!container) return;
+  const tx = resp?.Transaction || resp?.Enquiry?.TransactionStatus || resp?.Enquiry || resp;
+  let html = '';
+  if (ok) {
+    html = banner('success', titleOk, bodyOk);
+  } else if (resp) {
+    const desc = tx?.Result?.Description || 'Unknown error';
+    html = banner('error', titleFail || 'Failed', `${desc} (Code: ${tx?.Result?.Code || '?'})`);
+  } else {
+    html = banner('error', 'Network Error', bodyOk); // reuse bodyOk as error msg when resp null
+  }
+  container.innerHTML = html + txDetails(tx) + (resp ? renderJSON(req, resp, resId) : '');
+}
+
+/* refund-type selector shared by both flows */
+function setRefundType(type, flowPrefix) {
+  const fullEl    = document.getElementById(`${flowPrefix==='pa'?'ro':'pp-ro'}-full`);
+  const partialEl = document.getElementById(`${flowPrefix==='pa'?'ro':'pp-ro'}-partial`);
+  const wrap      = document.getElementById(`partial-amount-wrap-${flowPrefix}`);
+  if (fullEl)    fullEl.classList.toggle('selected',    type==='full');
+  if (partialEl) partialEl.classList.toggle('selected', type==='partial');
+  if (wrap)      wrap.style.display = type==='partial' ? '' : 'none';
+}
+
+/* ═══════════════════════════════════════════════
+   PRE-AUTH FLOW HANDLERS
+═══════════════════════════════════════════════ */
+
+/* PA-STEP 1: Authorisation with PAN */
+async function runPaAuth() {
+  if (!validate()) return;
+  setBusyEl('btn-pa-auth','ico-pa-auth','lbl-pa-auth', true);
+  markStepEl('pa-auth','active');
+
+  const payload = buildBase('Authorisation');
+  payload.Transaction = {
+    ...payload.Transaction,
+    MerchantReference : nextRef(),
+    MerchantTrace     : nextTrace(),
+    Currency          : 'ZAR',
+    Amount            : cfg('cfg-amount'),
+    ExpiryDate        : getExpiry(),
+    PAN               : getPAN(),
+  };
+  if (getCVV())  payload.Transaction.CardSecurityCode = getCVV();
+  if (getName()) payload.Transaction.CardholderName   = getName();
+
+  let resp;
+  try { resp = await callIveri(payload); } catch(e) {
+    showRes('res-pa-auth', payload, null, false, '', e.message);
+    markStepEl('pa-auth','failed');
+    setBusyEl('btn-pa-auth','ico-pa-auth','lbl-pa-auth', false,'🔒','Retry Pre-Authorise');
+    return;
+  }
+
+  const tx = resp.Transaction || resp;
+  const ok = tx?.Result?.Status === '0';
+
+  if (ok) {
+    state.authTxIndex   = tx.TransactionIndex;
+    state.authMaskedPAN = tx.PAN        || null;   // e.g. "4242........4242"
+    state.authExpiry    = tx.ExpiryDate || null;   // e.g. "122025"
+    state.addAuthAmount = parseInt(cfg('cfg-amount'), 10);
+    toast('✅ Pre-Authorisation successful! TransactionIndex stored.', 'success');
+    markStepEl('pa-auth','success');
+    showRes('res-pa-auth', payload, resp, true,
+      'Pre-Authorisation Approved',
+      `Funds of <strong>${tx.DisplayAmount||cfg('cfg-amount')+' cents'}</strong> reserved on cardholder account. Auth Code: <code>${tx.AuthorisationCode||'—'}</code>. <code>TransactionIndex</code> stored for follow-up actions.`
+    );
+    setBusyEl('btn-pa-auth','ico-pa-auth','lbl-pa-auth', false,'✓','Pre-Authorised');
+    document.getElementById('btn-pa-auth').disabled = true;
+    setTimeout(() => activateStepEl('pa-addauth'), 500);
+  } else {
+    toast(`Pre-Auth failed: ${tx?.Result?.Description || ''}`, 'error');
+    markStepEl('pa-auth','failed');
+    showRes('res-pa-auth', payload, resp, false, '', '', 'Pre-Authorisation Failed');
+    setBusyEl('btn-pa-auth','ico-pa-auth','lbl-pa-auth', false,'🔒','Retry Pre-Authorise');
+  }
+}
+
+/* PA-STEP 2: Additional Authorisation (increase amount) */
+async function runPaAddAuth() {
+  if (!state.authTxIndex) { toast('Complete Step 1 first', 'error'); return; }
+  const addAmt = parseInt(document.getElementById('addauth-amount').value, 10);
+  if (!addAmt || addAmt < 1) { toast('Enter a valid additional amount', 'error'); return; }
+
+  setBusyEl('btn-pa-addauth','ico-pa-addauth','lbl-pa-addauth', true);
+  markStepEl('pa-addauth','active');
+
+  /* Additional Authorisation: Command=Authorisation + TransactionIndex (PANFormat=TransactionIndex)
+     iVeri requires the masked PAN ("4242........4242") and ExpiryDate from the original response.
+     Sending the full PAN, an absent PAN, or dotted PAN triggers "PAN must be dotted out" error. */
+  if (!state.authMaskedPAN || !state.authExpiry) {
+    toast('Masked PAN / ExpiryDate not available — complete Step 1 first.', 'error');
+    setBusyEl('btn-pa-addauth','ico-pa-addauth','lbl-pa-addauth', false,'➕','Run Additional Authorisation');
+    return;
+  }
+  const payload = buildBase('Authorisation');
+  payload.Transaction = {
+    ...payload.Transaction,
+    MerchantReference : nextRef(),
+    MerchantTrace     : nextTrace(),
+    Currency          : 'ZAR',
+    Amount            : String(addAmt),
+    TransactionIndex  : state.authTxIndex,
+    PANFormat         : 'TransactionIndex',
+    PAN               : state.authMaskedPAN,   // masked PAN as returned by Step 1
+    ExpiryDate        : state.authExpiry,       // ExpiryDate as returned by Step 1
+  };
+
+  let resp;
+  try { resp = await callIveri(payload); } catch(e) {
+    showRes('res-pa-addauth', payload, null, false,'','',e.message);
+    markStepEl('pa-addauth','failed');
+    setBusyEl('btn-pa-addauth','ico-pa-addauth','lbl-pa-addauth', false,'➕','Retry Additional Auth');
+    return;
+  }
+
+  const tx = resp.Transaction || resp;
+  const ok = tx?.Result?.Status === '0';
+
+  if (ok) {
+    // Use the Amount the gateway APPROVED (tx.Amount), not the Amount we requested (addAmt).
+    // iVeri may approve a partial amount; using the requested value can cause a mismatch on capture.
+    const approvedAmt = parseInt(tx.Amount, 10) || addAmt;
+    state.addAuthAmount += approvedAmt;   // add gateway-approved increment to running total
+    // Do NOT overwrite state.authTxIndex — Debit must use the ORIGINAL TxIndex.
+    state.authMaskedPAN = tx.PAN        || state.authMaskedPAN;
+    state.authExpiry    = tx.ExpiryDate || state.authExpiry;
+    const approvedStr = (approvedAmt / 100).toFixed(2);
+    const totalStr    = (state.addAuthAmount / 100).toFixed(2);
+    toast(`✅ Additional Authorisation approved. Total reserved: R ${totalStr}`, 'success');
+    markStepEl('pa-addauth','success');
+    showRes('res-pa-addauth', payload, resp, true,
+      'Additional Authorisation Approved',
+      `An additional <strong>R ${(approvedAmt/100).toFixed(2)}</strong> approved by gateway. Total now: <strong>R ${(state.addAuthAmount/100).toFixed(2)}</strong>.<br/>
+       Debit (capture) will use the <em>original</em> <code>TransactionIndex</code> and charge the full total.`
+    );
+    setBusyEl('btn-pa-addauth','ico-pa-addauth','lbl-pa-addauth', false,'✓','Additional Auth Done');
+    document.getElementById('btn-pa-addauth').disabled = true;
+    setTimeout(() => activateStepEl('pa-action'), 500);
+  } else {
+    toast(`Additional Auth failed: ${tx?.Result?.Description || ''}`, 'error');
+    markStepEl('pa-addauth','failed');
+    showRes('res-pa-addauth', payload, resp, false, '','','Additional Authorisation Failed');
+    setBusyEl('btn-pa-addauth','ico-pa-addauth','lbl-pa-addauth', false,'➕','Retry Additional Auth');
+  }
+}
+
+function skipAddAuth() {
+  markStepEl('pa-addauth','skipped');
+  document.getElementById('badge-pa-addauth').textContent = 'Skipped';
+  setTimeout(() => activateStepEl('pa-action'), 200);
+}
+
+/* PA-STEP 3a: Capture (Debit with TransactionIndex) */
+async function runPaCapture() {
+  if (!state.authTxIndex) { toast('Complete Step 1 first', 'error'); return; }
+  setBusyEl('btn-pa-capture','ico-pa-capture','lbl-pa-capture', true);
+  markStepEl('pa-action','active');
+
+  // Use the total reserved amount (original + any additional auth).
+  // If Additional Auth was run, state.addAuthAmount = original + extra; otherwise it equals cfg-amount.
+  const captureAmt = state.addAuthAmount > 0 ? String(state.addAuthAmount) : cfg('cfg-amount');
+  const payload = buildBase('Debit');
+  payload.Transaction = {
+    ...payload.Transaction,
+    Amount           : captureAmt,
+    MerchantTrace    : nextTrace(),
+    TransactionIndex : state.authTxIndex,  // updated to latest TxIndex if Additional Auth ran
+  };
+
+  let resp;
+  try { resp = await callIveri(payload); } catch(e) {
+    showRes('res-pa-capture', payload, null, false,'','',e.message);
+    setBusyEl('btn-pa-capture','ico-pa-capture','lbl-pa-capture', false,'💳','Retry Capture');
+    return;
+  }
+
+  const tx = resp.Transaction || resp;
+  const ok = tx?.Result?.Status === '0';
+
+  if (ok) {
+    state.debitTxIndex = tx.TransactionIndex;
+    toast('🎉 Payment captured! Funds transferred to merchant.', 'success');
+    markStepEl('pa-action','success');
+    showRes('res-pa-capture', payload, resp, true,
+      'Payment Captured!',
+      `Funds of <strong>${tx.DisplayAmount||cfg('cfg-amount')+' cents'}</strong> transferred from cardholder to merchant. Auth Code: <code>${tx.AuthorisationCode||'—'}</code>.`
+    );
+    setBusyEl('btn-pa-capture','ico-pa-capture','lbl-pa-capture', false,'✓','Captured');
+    document.getElementById('btn-pa-capture').disabled = true;
+    document.getElementById('btn-pa-reverse').disabled  = true;
+    setTimeout(() => activateStepEl('pa-refund'), 500);
+  } else {
+    toast(`Capture failed: ${tx?.Result?.Description || ''}`, 'error');
+    markStepEl('pa-action','failed');
+    showRes('res-pa-capture', payload, resp, false, '','','Debit (Capture) Failed');
+    setBusyEl('btn-pa-capture','ico-pa-capture','lbl-pa-capture', false,'💳','Retry Capture');
+  }
+}
+
+/* PA-STEP 3b: Release (AuthorisationReversal with TransactionIndex) */
+async function runPaReverse() {
+  if (!state.authTxIndex) { toast('Complete Step 1 first', 'error'); return; }
+  setBusyEl('btn-pa-reverse','ico-pa-reverse','lbl-pa-reverse', true);
+  markStepEl('pa-action','active');
+
+  const payload = buildBase('AuthorisationReversal');
+  payload.Transaction = {
+    ...payload.Transaction,
+    TransactionIndex : state.authTxIndex,
+  };
+
+  let resp;
+  try { resp = await callIveri(payload); } catch(e) {
+    showRes('res-pa-reverse', payload, null, false,'','',e.message);
+    setBusyEl('btn-pa-reverse','ico-pa-reverse','lbl-pa-reverse', false,'🔓','Retry Release');
+    return;
+  }
+
+  const tx = resp.Transaction || resp;
+  const ok = tx?.Result?.Status === '0';
+
+  if (ok) {
+    toast('✅ Hold released. Funds returned to cardholder.', 'success');
+    markStepEl('pa-action','success');
+    showRes('res-pa-reverse', payload, resp, true,
+      'Authorisation Reversed — Hold Released',
+      `The reserved funds have been released back to the cardholder's account. No payment was taken.`
+    );
+    setBusyEl('btn-pa-reverse','ico-pa-reverse','lbl-pa-reverse', false,'✓','Released');
+    document.getElementById('btn-pa-reverse').disabled = true;
+    document.getElementById('btn-pa-capture').disabled  = true;
+    // no refund needed after reversal — just mark refund skipped/done
+    const refundStep = document.getElementById('step-pa-refund');
+    if (refundStep) {
+      refundStep.classList.remove('skipped');
+      const badge = document.getElementById('badge-pa-refund');
+      if (badge) { badge.className='step-status-badge badge-pending'; badge.textContent='N/A'; }
+      const notebox = refundStep.querySelector('.note-box');
+      if (notebox) notebox.innerHTML += '<br/><strong>ℹ️ Reversal performed — no funds were captured, so no refund is required.</strong>';
+    }
+  } else {
+    toast(`Release failed: ${tx?.Result?.Description || ''}`, 'error');
+    markStepEl('pa-action','failed');
+    showRes('res-pa-reverse', payload, resp, false,'','','AuthorisationReversal Failed');
+    setBusyEl('btn-pa-reverse','ico-pa-reverse','lbl-pa-reverse', false,'🔓','Retry Release');
+  }
+}
+
+/* PA-STEP 4: Refund (Credit with TransactionIndex) */
+async function runPaRefund() {
+  if (!state.debitTxIndex) { toast('A successful Capture (Step 3) is required before refunding.', 'error'); return; }
+
+  const isPartial = document.getElementById('ro-partial')?.classList.contains('selected');
+  let refundAmt   = cfg('cfg-amount');
+  if (isPartial) {
+    const v = document.getElementById('refund-amount-pa')?.value;
+    if (!v || parseInt(v,10) < 1) { toast('Enter a valid partial refund amount', 'error'); return; }
+    refundAmt = v;
+  }
+
+  setBusyEl('btn-pa-refund','ico-pa-refund','lbl-pa-refund', true);
+  markStepEl('pa-refund','active');
+
+  const payload = buildBase('Credit');
+  payload.Transaction = {
+    ...payload.Transaction,
+    Amount           : refundAmt,
+    MerchantReference: nextRef(),
+    MerchantTrace    : nextTrace(),
+    TransactionIndex : state.debitTxIndex,
+    // Follow-Credit: no PANFormat/PAN/ExpiryDate per iVeri docs Follow-Credit example
+  };
+
+  let resp;
+  try { resp = await callIveri(payload); } catch(e) {
+    showRes('res-pa-refund', payload, null, false,'','',e.message);
+    markStepEl('pa-refund','failed');
+    setBusyEl('btn-pa-refund','ico-pa-refund','lbl-pa-refund', false,'↩','Retry Refund');
+    return;
+  }
+
+  const tx = resp.Transaction || resp;
+  const ok = tx?.Result?.Status === '0';
+
+  if (ok) {
+    toast('💚 Refund issued successfully!', 'success');
+    markStepEl('pa-refund','success');
+    showRes('res-pa-refund', payload, resp, true,
+      'Refund Issued (Credit)',
+      `<strong>R ${(parseInt(refundAmt,10)/100).toFixed(2)}</strong> returned to cardholder. Auth Code: <code>${tx.AuthorisationCode||'—'}</code>.`
+    );
+    setBusyEl('btn-pa-refund','ico-pa-refund','lbl-pa-refund', false,'✓','Refund Complete');
+    document.getElementById('btn-pa-refund').disabled = true;
+  } else {
+    toast(`Refund failed: ${tx?.Result?.Description || ''}`, 'error');
+    markStepEl('pa-refund','failed');
+    showRes('res-pa-refund', payload, resp, false,'','','Refund (Credit) Failed');
+    setBusyEl('btn-pa-refund','ico-pa-refund','lbl-pa-refund', false,'↩','Retry Refund');
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   PREPAYMENT FLOW HANDLERS
+═══════════════════════════════════════════════ */
+let ppOutcome = 'approve';
+function setPpOutcome(val) {
+  ppOutcome = val;
+  document.getElementById('pp-opt-approve')?.classList.toggle('selected', val==='approve');
+  document.getElementById('pp-opt-decline')?.classList.toggle('selected', val==='decline');
+  const btn = document.getElementById('btn-pp-debit');
+  if (btn) btn.className = val==='decline' ? 'btn btn-danger btn-full' : 'btn btn-success btn-full';
+  const lbl = document.getElementById('lbl-pp-debit');
+  if (lbl) lbl.textContent = val==='decline' ? 'Simulate Declined Payment' : 'Pay Now (Debit)';
+  const ico = document.getElementById('ico-pp-debit');
+  if (ico) ico.textContent = val==='decline' ? '❌' : '💳';
+}
+
+/* PP-STEP 1: Debit with PAN */
+async function runPpDebit() {
+  if (!validate()) return;
+  setBusyEl('btn-pp-debit','ico-pp-debit','lbl-pp-debit', true);
+  markStepEl('pp-debit','active');
+
+  const forceDecline = ppOutcome === 'decline';
+
+  const payload = buildBase('Debit');
+  payload.Transaction = {
+    ...payload.Transaction,
+    MerchantReference : nextRef(),
+    MerchantTrace     : nextTrace(),
+    Currency          : 'ZAR',
+    Amount            : cfg('cfg-amount'),
+    ExpiryDate        : getExpiry(),
+    PAN               : forceDecline ? '2121212121212121' : getPAN(),
+  };
+  if (!forceDecline && getCVV())  payload.Transaction.CardSecurityCode = getCVV();
+  if (!forceDecline && getName()) payload.Transaction.CardholderName   = getName();
+
+  let resp;
+  try { resp = await callIveri(payload); } catch(e) {
+    showRes('res-pp-debit', payload, null, false,'','',e.message);
+    markStepEl('pp-debit','failed');
+    setBusyEl('btn-pp-debit','ico-pp-debit','lbl-pp-debit', false,'💳','Retry Payment');
+    return;
+  }
+
+  const tx = resp.Transaction || resp;
+  const ok = tx?.Result?.Status === '0';
+
+  if (ok) {
+    state.debitTxIndex = tx.TransactionIndex;
+    state.ppMaskedPAN  = tx.PAN        || null;   // e.g. "4242........4242"
+    state.ppExpiry     = tx.ExpiryDate || null;   // e.g. "122025"
+    toast('🎉 Payment approved! Store response and mark order as PAID.', 'success');
+    markStepEl('pp-debit','success');
+    showRes('res-pp-debit', payload, resp, true,
+      'Payment Approved — Order Marked as PAID',
+      `<strong>${tx.DisplayAmount||cfg('cfg-amount')+' cents'}</strong> debited from cardholder. Auth Code: <code>${tx.AuthorisationCode||'—'}</code>.
+       TransactionIndex stored: <code>${tx.TransactionIndex||'—'}</code>.
+       All response fields below should be stored in your database.`
+    );
+    setBusyEl('btn-pp-debit','ico-pp-debit','lbl-pp-debit', false,'✓','Payment Complete');
+    document.getElementById('btn-pp-debit').disabled = true;
+    document.getElementById('pp-outcome-toggle')?.style && (document.getElementById('pp-outcome-toggle').style.display='none');
+    setTimeout(() => activateStepEl('pp-verify'), 500);
+  } else {
+    const desc = tx?.Result?.Description || 'Unknown error';
+    if (forceDecline) {
+      toast(`Payment declined (simulated): ${desc}`, 'info');
+      markStepEl('pp-debit','failed');
+      showRes('res-pp-debit', payload, resp, false,'','',
+        `Payment DECLINED (${forceDecline?'simulated':''}). <strong>Do NOT mark the order as paid.</strong> ${desc}.`
+      );
+    } else {
+      toast(`Payment failed: ${desc}`, 'error');
+      markStepEl('pp-debit','failed');
+      showRes('res-pp-debit', payload, resp, false,'','','Payment Declined — Do NOT mark as paid');
+    }
+    setBusyEl('btn-pp-debit','ico-pp-debit','lbl-pp-debit', false,
+      forceDecline?'❌':'💳', forceDecline?'Retry Simulation':'Retry Payment');
+  }
+}
+
+/* PP-STEP 2: Verify (TransactionStatus) */
+async function runPpVerify() {
+  if (!state.debitTxIndex) { toast('Complete Step 1 first (payment must be approved)', 'error'); return; }
+  setBusyEl('btn-pp-verify','ico-pp-verify','lbl-pp-verify', true);
+  markStepEl('pp-verify','active');
+
+  const payload = buildBase('TransactionStatus', true);
+  payload.Enquiry = { ...payload.Enquiry, TransactionIndex: state.debitTxIndex };
+
+  let resp;
+  try { resp = await callIveri(payload); } catch(e) {
+    showRes('res-pp-verify', payload, null, false,'','',e.message);
+    markStepEl('pp-verify','failed');
+    setBusyEl('btn-pp-verify','ico-pp-verify','lbl-pp-verify', false,'🔍','Retry Verify');
+    return;
+  }
+
+  const tx = resp.Enquiry?.TransactionStatus || resp.Enquiry || resp;
+  const ok = tx?.Result?.Status === '0';
+
+  if (ok) {
+    toast('✅ Payment verified server-side!', 'success');
+    markStepEl('pp-verify','success');
+    showRes('res-pp-verify', payload, resp, true,
+      'Payment Verified',
+      `Transaction confirmed. Auth Code: <code>${tx.AuthorisationCode||'—'}</code>. You can now finalise the order.`
+    );
+    setBusyEl('btn-pp-verify','ico-pp-verify','lbl-pp-verify', false,'✅','Verified');
+    document.getElementById('btn-pp-verify').disabled = true;
+    setTimeout(() => activateStepEl('pp-refund'), 500);
+  } else {
+    toast(`Verification failed: ${tx?.Result?.Description || ''}`, 'error');
+    markStepEl('pp-verify','failed');
+    showRes('res-pp-verify', payload, resp, false,'','','Verification Failed');
+    setBusyEl('btn-pp-verify','ico-pp-verify','lbl-pp-verify', false,'🔍','Retry Verify');
+  }
+}
+
+/* PP-STEP 3: Refund (Credit with TransactionIndex) */
+async function runPpRefund() {
+  if (!state.debitTxIndex) { toast('Successful payment required before refunding.', 'error'); return; }
+
+  const isPartial = document.getElementById('pp-ro-partial')?.classList.contains('selected');
+  let refundAmt   = cfg('cfg-amount');
+  if (isPartial) {
+    const v = document.getElementById('refund-amount-pp')?.value;
+    if (!v || parseInt(v,10) < 1) { toast('Enter a valid partial refund amount', 'error'); return; }
+    refundAmt = v;
+  }
+
+  setBusyEl('btn-pp-refund','ico-pp-refund','lbl-pp-refund', true);
+  markStepEl('pp-refund','active');
+
+  const payload = buildBase('Credit');
+  payload.Transaction = {
+    ...payload.Transaction,
+    Amount           : refundAmt,
+    MerchantReference: nextRef(),
+    MerchantTrace    : nextTrace(),
+    TransactionIndex : state.debitTxIndex,
+    // Follow-Credit: no PANFormat/PAN/ExpiryDate per iVeri docs Follow-Credit example
+  };
+
+  let resp;
+  try { resp = await callIveri(payload); } catch(e) {
+    showRes('res-pp-refund', payload, null, false,'','',e.message);
+    markStepEl('pp-refund','failed');
+    setBusyEl('btn-pp-refund','ico-pp-refund','lbl-pp-refund', false,'↩','Retry Refund');
+    return;
+  }
+
+  const tx = resp.Transaction || resp;
+  const ok = tx?.Result?.Status === '0';
+
+  if (ok) {
+    toast('💚 Refund issued!', 'success');
+    markStepEl('pp-refund','success');
+    showRes('res-pp-refund', payload, resp, true,
+      'Refund Issued (Credit)',
+      `<strong>R ${(parseInt(refundAmt,10)/100).toFixed(2)}</strong> returned to cardholder. Auth Code: <code>${tx.AuthorisationCode||'—'}</code>.`
+    );
+    setBusyEl('btn-pp-refund','ico-pp-refund','lbl-pp-refund', false,'✓','Refund Complete');
+    document.getElementById('btn-pp-refund').disabled = true;
+  } else {
+    toast(`Refund failed: ${tx?.Result?.Description || ''}`, 'error');
+    markStepEl('pp-refund','failed');
+    showRes('res-pp-refund', payload, resp, false,'','','Refund (Credit) Failed');
+    setBusyEl('btn-pp-refund','ico-pp-refund','lbl-pp-refund', false,'↩','Retry Refund');
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   RESET
+═══════════════════════════════════════════════ */
+function resetDemo() {
+  state.authTxIndex   = null;
+  state.debitTxIndex  = null;
+  state.addAuthAmount = 0;
+  ppOutcome = 'approve';
+  renderTimeline(state.flow);
+  renderSteps(state.flow);
+  toast('Demo reset ✓', 'info');
+}
+
+/* ═══════════════════════════════════════════════
+   BOOT
+═══════════════════════════════════════════════ */
+renderTimeline('preauth');
+renderSteps('preauth');
+document.getElementById('tl-pa-auth')?.classList.add('active');
+</script>
+</body>
+</html>
