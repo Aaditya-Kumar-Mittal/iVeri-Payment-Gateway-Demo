@@ -813,27 +813,9 @@ body {
         <input id="cfg-cert-id" type="text" value="5c4b9c74-0063-4240-9cff-f730675c5bd0" />
       </div>
       <div class="field">
-        <label>Amount (cents)</label>
+        <label>Amount (ZAR cents)</label>
         <input id="cfg-amount" type="number" value="5000" min="100" />
-        <span style="font-size:.7rem;color:var(--text-muted);margin-top:4px;display:block">5000 cents = 50.00 in selected currency</span>
-      </div>
-      <div class="field">
-        <label>Currency</label>
-        <select id="cfg-currency" onchange="updateCurrencyDisplay()">
-          <option value="ZAR">ZAR - South African Rand</option>
-          <option value="USD">USD - US Dollar</option>
-          <option value="EUR">EUR - Euro</option>
-          <option value="GBP">GBP - British Pound</option>
-          <option value="JPY">JPY - Japanese Yen</option>
-          <option value="AUD">AUD - Australian Dollar</option>
-          <option value="CAD">CAD - Canadian Dollar</option>
-          <option value="CHF">CHF - Swiss Franc</option>
-          <option value="CNY">CNY - Chinese Yuan</option>
-          <option value="INR">INR - Indian Rupee</option>
-          <option value="KES">KES - Kenyan Shilling</option>
-          <option value="NGN">NGN - Nigerian Naira</option>
-          <option value="NAD">NAD - Namibian Dollar</option>
-        </select>
+        <span style="font-size:.7rem;color:var(--text-muted);margin-top:4px;display:block">5000 = R 50.00</span>
       </div>
       <div class="field">
         <label>Mode</label>
@@ -980,39 +962,19 @@ body {
 ═══════════════════════════════════════════════ */
 const state = {
   flow          : 'preauth',   // 'preauth' | 'prepay'
-  currency      : 'ZAR',       // selected currency code
-  panToken      : null,        // token from PANToken command
-  tokenTxIndex  : null,        // TransactionIndex from PANToken
-  tokenMaskedPAN: null,        // masked PAN from PANToken response
-  tokenExpiry   : null,        // ExpiryDate from PANToken response
-  authTxIndex   : null,        // TransactionIndex from initial Authorisation (pre-auth flow)
-  authMaskedPAN : null,        // masked PAN returned by gateway (e.g. "4242........4242")
-  authExpiry    : null,        // ExpiryDate returned by gateway (e.g. "122025")
-  addAuthAmount : 0,           // amount after Additional Authorisation
-  debitTxIndex  : null,        // TransactionIndex from Debit (either flow)
-  ppMaskedPAN   : null,        // masked PAN from prepayment Debit response
-  ppExpiry      : null,        // ExpiryDate from prepayment Debit response
+  authTxIndex   : null,   // TransactionIndex from initial Authorisation (pre-auth flow)
+  authMaskedPAN : null,   // masked PAN returned by gateway (e.g. "4242........4242")
+  authExpiry    : null,   // ExpiryDate returned by gateway (e.g. "122025")
+  addAuthAmount : 0,      // amount after Additional Authorisation
+  debitTxIndex  : null,   // TransactionIndex from Debit (either flow)
+  ppMaskedPAN   : null,   // masked PAN from prepayment Debit response
+  ppExpiry      : null,   // ExpiryDate from prepayment Debit response
   refNum        : 0,
   traceNum      : 0,
-  countdownActive: false,      // tracks if 5-second countdown is active
 };
 
 function nextRef()   { state.refNum++;   return `DEMO${Date.now().toString().slice(-6)}_${state.refNum}`; }
 function nextTrace() { state.traceNum++; return `TRC${Date.now().toString().slice(-8)}_${state.traceNum}`; }
-
-function getCurrency() { return cfg('cfg-currency'); }
-
-function updateCurrencyDisplay() {
-  const newCurrency = getCurrency();
-  state.currency = newCurrency;
-  // Find the currency symbol for display
-  const currencySymbols = { 'ZAR': 'R', 'USD': '$', 'EUR': '€', 'GBP': '£', 'JPY': '¥', 'AUD': '$', 'CAD': '$', 'CHF': 'CHF', 'CNY': '¥', 'INR': '₹', 'KES': 'KSh', 'NGN': '₦', 'NAD': 'N$' };
-  const symbol = currencySymbols[newCurrency] || newCurrency;
-  const amount = parseInt(cfg('cfg-amount'), 10);
-  const displayAmount = (amount / 100).toFixed(2);
-  document.querySelector('span[id=""]')?.classList.add('_placeholder');
-  toast(`Currency changed to ${newCurrency}`, 'info');
-}
 
 /* ═══════════════════════════════════════════════
    FLOW DEFINITIONS
@@ -1020,23 +982,21 @@ function updateCurrencyDisplay() {
 ═══════════════════════════════════════════════ */
 const FLOWS = {
   preauth: {
-    label: '🔒 Token-Based Pre-Authorisation Flow — iVeri Enterprise',
+    label: '🔒 Pre-Authorisation Flow — iVeri Enterprise',
     steps: [
-      { id:'pa-token',   num:1, title:'Tokenize Card (Add Card)',              sub:'Command: <code>PANToken</code> · Enquiry to create a reusable token from card details.',                               tlLabel:'PANToken<br/>(Tokenize)',     color:'primary' },
-      { id:'pa-auth',    num:2, title:'Pre-Authorise with Token (Reserve)',    sub:'Command: <code>Authorisation</code> · Reserves funds using the token from Step 1. No money taken yet.',               tlLabel:'Authorisation<br/>(Reserve)',    color:'primary' },
-      { id:'pa-addauth', num:3, title:'Additional Authorisation (Optional)',   sub:'Command: <code>Authorisation</code> + TransactionIndex · Increases the previously reserved amount.',               tlLabel:'Additional<br/>Auth (optional)', color:'warn' },
-      { id:'pa-capture', num:4, title:'Capture Payment (Debit)',               sub:'Command: <code>Debit</code> + TransactionIndex · Transfers the reserved funds from cardholder to merchant.',       tlLabel:'Debit<br/>(Capture)',            color:'success' },
-      { id:'pa-countdown', num:5, title:'Wait 5 Seconds (Refund Prompt)',      sub:'Countdown timer, then ask: Refund or Keep?',                                                                           tlLabel:'Wait 5s<br/>(Decision)',        color:'info' },
-      { id:'pa-reverse', num:4, title:'— OR — Auto Reverse Payment',          sub:'Command: <code>AuthorisationReversal</code> + TransactionIndex · Automatically reverses/cancels the payment.',       tlLabel:'Auto Reverse<br/>(Cancel)',      color:'danger', alternate:true },
-      { id:'pa-refund',  num:6, title:'Refund (Optional)',                     sub:'Command: <code>Credit</code> + TransactionIndex · Returns already-captured funds to cardholder.',                  tlLabel:'Credit<br/>(Refund)',            color:'info' },
+      { id:'pa-auth',    num:1, title:'Pre-Authorise (Reserve Funds)',          sub:'Command: <code>Authorisation</code> · Reserves/holds funds on cardholder account. No money taken yet.',           tlLabel:'Authorisation<br/>(Reserve)',    color:'primary' },
+      { id:'pa-addauth', num:2, title:'Additional Authorisation (Optional)',     sub:'Command: <code>Authorisation</code> + TransactionIndex · Increases the previously reserved amount.',               tlLabel:'Additional<br/>Auth (optional)', color:'warn' },
+      { id:'pa-capture', num:3, title:'Capture Payment (Debit)',                 sub:'Command: <code>Debit</code> + TransactionIndex · Transfers the reserved funds from cardholder to merchant.',       tlLabel:'Debit<br/>(Capture)',            color:'success' },
+      { id:'pa-reverse', num:3, title:'— OR — Cancel / Release Hold',           sub:'Command: <code>AuthorisationReversal</code> + TransactionIndex · Releases the hold, no funds taken.',              tlLabel:'AuthReversal<br/>(Cancel)',      color:'danger', alternate:true },
+      { id:'pa-refund',  num:4, title:'Refund (Optional)',                       sub:'Command: <code>Credit</code> + TransactionIndex · Returns already-captured funds to cardholder.',                  tlLabel:'Credit<br/>(Refund)',            color:'info' },
     ],
   },
   prepay: {
     label: '💳 Prepayment Flow (Immediate Debit) — iVeri Enterprise',
     steps: [
-      { id:'pp-debit',  num:1, title:'Immediate Payment (Debit)',             sub:'Command: <code>Debit</code> with PAN · Takes payment immediately. Funds transferred at this point.',               tlLabel:'Debit<br/>(Pay Now)',            color:'success' },
-      { id:'pp-verify', num:2, title:'Verify Payment Status',                 sub:'Command: <code>TransactionStatus</code> enquiry · Server-side confirmation. Mark order as paid ONLY if approved.', tlLabel:'Verify<br/>Status',              color:'info' },
-      { id:'pp-refund', num:3, title:'Refund (Optional)',                      sub:'Command: <code>Credit</code> + TransactionIndex · Return the upfront payment to the cardholder.',                 tlLabel:'Credit<br/>(Refund)',            color:'info' },
+      { id:'pp-debit',  num:1, title:'Immediate Payment (Debit)',               sub:'Command: <code>Debit</code> with PAN · Takes payment immediately. Funds transferred at this point.',               tlLabel:'Debit<br/>(Pay Now)',            color:'success' },
+      { id:'pp-verify', num:2, title:'Verify Payment Status',                   sub:'Command: <code>TransactionStatus</code> enquiry · Server-side confirmation. Mark order as paid ONLY if approved.', tlLabel:'Verify<br/>Status',              color:'info' },
+      { id:'pp-refund', num:3, title:'Refund (Optional)',                        sub:'Command: <code>Credit</code> + TransactionIndex · Return the upfront payment to the cardholder.',                 tlLabel:'Credit<br/>(Refund)',            color:'info' },
     ],
   },
 };
@@ -1069,51 +1029,21 @@ function renderSteps(flowKey) {
 /* ── Pre-Auth HTML steps ── */
 function htmlPreauthSteps() {
   return `
-  <!-- STEP PA-0: PANToken (Tokenization) -->
-  <div class="step-card active" id="step-pa-token">
-    <div class="step-header" onclick="toggleStepEl('body-pa-token','chev-pa-token')">
+  <!-- STEP PA-1: Authorisation with PAN -->
+  <div class="step-card active" id="step-pa-auth">
+    <div class="step-header" onclick="toggleStepEl('body-pa-auth','chev-pa-auth')">
       <div class="step-num">1</div>
       <div style="flex:1">
-        <div class="step-title">Tokenize Card (Add Card)</div>
-        <div class="step-subtitle">Command: <code>PANToken</code> (Enquiry) — creates a reusable token with minimal amount (1¢).</div>
+        <div class="step-title">Pre-Authorise (Reserve Funds)</div>
+        <div class="step-subtitle">Command: <code>Authorisation</code> — reserves/holds funds without capturing. Funds are NOT debited yet.</div>
       </div>
-      <span class="step-status-badge badge-active" id="badge-pa-token">Active</span>
-      <span style="color:var(--text-muted);margin-left:8px;" id="chev-pa-token">▾</span>
-    </div>
-    <div class="step-body open" id="body-pa-token">
-      <div class="note-box">
-        📌 <strong>iVeri Enterprise — PANToken Enquiry:</strong> Converts card details into a reusable token using a minimal amount (1¢) for validation.
-        The returned <code>TransactionIndex</code> (token) and masked PAN will be used in Step 2 for authorization with your chosen amount.
-      </div>
-      <button class="btn btn-primary btn-full" id="btn-pa-token" onclick="runPaToken()">
-        <span id="ico-pa-token">🔐</span>
-        <span id="lbl-pa-token">Tokenize Card (Add Card)</span>
-      </button>
-      <div id="res-pa-token"></div>
-    </div>
-  </div>
-
-  <!-- STEP PA-1: Authorisation with Token -->
-  <div class="step-card skipped" id="step-pa-auth">
-    <div class="step-header" onclick="toggleStepEl('body-pa-auth','chev-pa-auth')">
-      <div class="step-num">2</div>
-      <div style="flex:1">
-        <div class="step-title">Pre-Authorise (Reserve Funds using Token)</div>
-        <div class="step-subtitle">Command: <code>Authorisation</code> — Enter amount to reserve. Funds are NOT debited yet.</div>
-      </div>
-      <span class="step-status-badge badge-pending" id="badge-pa-auth">Pending</span>
+      <span class="step-status-badge badge-active" id="badge-pa-auth">Active</span>
       <span style="color:var(--text-muted);margin-left:8px;" id="chev-pa-auth">▾</span>
     </div>
-    <div class="step-body" id="body-pa-auth">
+    <div class="step-body open" id="body-pa-auth">
       <div class="note-box">
-        📌 <strong>iVeri Enterprise — Authorisation with Token:</strong> Uses the token from Step 1 to reserve funds.
-        Enter the amount you want to authorize (reserve). This can be different from the tokenization amount.
-        The returned <code>TransactionIndex</code> must be stored for all follow-up actions (Debit, Reversal, Additional Auth).
-      </div>
-      <div class="field" style="margin-bottom: 16px;">
-        <label>Authorization Amount (ZAR cents)</label>
-        <input id="auth-amount" type="number" value="5000" min="1" placeholder="e.g. 5000 = R 50.00" />
-        <span style="font-size:.7rem;color:var(--text-muted);margin-top:4px;display:block">Amount to reserve on cardholder's account</span>
+        📌 <strong>iVeri Enterprise — Authorisation:</strong> Causes a reservation of funds on the cardholder's account.
+        This is the pre-authorisation step. The returned <code>TransactionIndex</code> must be stored for all follow-up actions (Debit, Reversal, Additional Auth).
       </div>
       <button class="btn btn-primary btn-full" id="btn-pa-auth" onclick="runPaAuth()">
         <span id="ico-pa-auth">🔒</span>
@@ -1126,10 +1056,10 @@ function htmlPreauthSteps() {
   <!-- STEP PA-2: Additional Authorisation (optional) -->
   <div class="step-card skipped" id="step-pa-addauth">
     <div class="step-header" onclick="toggleStepEl('body-pa-addauth','chev-pa-addauth')">
-      <div class="step-num">3</div>
+      <div class="step-num">2</div>
       <div style="flex:1">
         <div class="step-title">Additional Authorisation — Increase Reserved Amount (Optional)</div>
-        <div class="step-subtitle">Command: <code>Authorisation</code> + TransactionIndex · increases the amount previously reserved via iVeri.</div>
+        <div class="step-subtitle">Command: <code>Authorisation</code> + TransactionIndex — increases the amount previously reserved via iVeri.</div>
       </div>
       <span class="step-status-badge badge-pending" id="badge-pa-addauth">Optional</span>
       <span style="color:var(--text-muted);margin-left:8px;" id="chev-pa-addauth">▾</span>
@@ -1139,12 +1069,12 @@ function htmlPreauthSteps() {
         📌 <strong>iVeri Enterprise — Additional Authorisation with TransactionIndex:</strong>
         Increase the amount previously reserved via iVeri by an additional amount.
         Note: The addition of funds reserved <em>outside</em> the iVeri Gateway is not supported.
-        Use the original <code>TransactionIndex</code> from Step 2.
+        Use the original <code>TransactionIndex</code> from Step 1.
       </div>
       <div class="increase-row">
         <div class="field">
-          <label>Additional Amount (cents)</label>
-          <input id="addauth-amount" type="number" value="2000" min="100" placeholder="2000 = 20.00 in selected currency" />
+          <label>Additional Amount (ZAR cents)</label>
+          <input id="addauth-amount" type="number" value="2000" min="100" placeholder="2000 = R20.00" />
         </div>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
@@ -1160,37 +1090,37 @@ function htmlPreauthSteps() {
     </div>
   </div>
 
-  <!-- STEP PA-3a/b: Capture OR Auto Reverse -->
+  <!-- STEP PA-3a/b: Capture OR Release -->
   <div class="step-card skipped" id="step-pa-action">
     <div class="step-header" onclick="toggleStepEl('body-pa-action','chev-pa-action')">
-      <div class="step-num">4</div>
+      <div class="step-num">3</div>
       <div style="flex:1">
-        <div class="step-title">Capture Payment OR Auto Reverse</div>
-        <div class="step-subtitle">Choose: capture the reserved funds (<code>Debit</code>) or auto-reverse the payment (<code>AuthorisationReversal</code>)</div>
+        <div class="step-title">Capture Payment OR Release Hold</div>
+        <div class="step-subtitle">Choose: capture the reserved funds (<code>Debit</code>) or release the hold (<code>AuthorisationReversal</code>)</div>
       </div>
       <span class="step-status-badge badge-pending" id="badge-pa-action">Pending</span>
       <span style="color:var(--text-muted);margin-left:8px;" id="chev-pa-action">▾</span>
     </div>
     <div class="step-body" id="body-pa-action">
       <div class="note-box">
-        📌 Choose one action. Both use the <code>TransactionIndex</code> stored in Step 2.<br/>
+        📌 Choose one action. Both use the <code>TransactionIndex</code> stored in Step 1.<br/>
         <strong>Debit with TransactionIndex</strong> = capture/transfer the reserved funds to the merchant.<br/>
-        <strong>Auto Reversal with TransactionIndex</strong> = automatically reverse/cancel the payment; no funds taken.
+        <strong>AuthorisationReversal with TransactionIndex</strong> = release/cancel the hold; no funds taken.
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:0;">
         <div>
-          <p style="font-size:.75rem;font-weight:700;color:var(--success);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">✅ Capture Payment</p>
+          <p style="font-size:.75rem;font-weight:700;color:var(--success);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">✅ Booking Confirmed — Capture</p>
           <button class="btn btn-success btn-full" id="btn-pa-capture" onclick="runPaCapture()">
             <span id="ico-pa-capture">💳</span>
-            <span id="lbl-pa-capture">Debit with Token (Capture)</span>
+            <span id="lbl-pa-capture">Debit with TransactionIndex (Capture)</span>
           </button>
           <div id="res-pa-capture"></div>
         </div>
         <div>
-          <p style="font-size:.75rem;font-weight:700;color:var(--danger);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">❌ Auto Reverse</p>
+          <p style="font-size:.75rem;font-weight:700;color:var(--danger);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">❌ Booking Cancelled — Release Hold</p>
           <button class="btn btn-danger btn-full" id="btn-pa-reverse" onclick="runPaReverse()">
-            <span id="ico-pa-reverse">🔄</span>
-            <span id="lbl-pa-reverse">Auto Reverse (Cancel)</span>
+            <span id="ico-pa-reverse">🔓</span>
+            <span id="lbl-pa-reverse">AuthorisationReversal (Release Hold)</span>
           </button>
           <div id="res-pa-reverse"></div>
         </div>
@@ -1198,75 +1128,13 @@ function htmlPreauthSteps() {
     </div>
   </div>
 
-  <!-- STEP PA-4: 5-Second Countdown (after Capture) -->
-  <div class="step-card skipped" id="step-pa-countdown">
-    <div class="step-header" onclick="toggleStepEl('body-pa-countdown','chev-pa-countdown')">
-      <div class="step-num">5</div>
-      <div style="flex:1">
-        <div class="step-title">Wait 5 Seconds — Refund Decision</div>
-        <div class="step-subtitle">Countdown timer before prompting for refund or keep</div>
-      </div>
-      <span class="step-status-badge badge-waiting" id="badge-pa-countdown">Waiting</span>
-      <span style="color:var(--text-muted);margin-left:8px;" id="chev-pa-countdown">▾</span>
-    </div>
-    <div class="step-body" id="body-pa-countdown">
-      <div class="note-box">
-        📌 Payment has been captured. Please wait 5 seconds, then choose to keep or refund the transaction.
-      </div>
-      <div class="countdown-wrap">
-        <div class="countdown-ring" id="countdown-ring">
-          <svg width="80" height="80">
-            <circle class="ring-bg" cx="40" cy="40" r="36" stroke-width="3"></circle>
-            <circle class="ring-fill" cx="40" cy="40" r="36" stroke-width="3" stroke-dasharray="226.19" stroke-dashoffset="0"></circle>
-          </svg>
-          <div class="countdown-num" id="countdown-num">5</div>
-        </div>
-        <div class="countdown-label">Seconds remaining</div>
-      </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;">
-        <button class="btn btn-success" style="flex:1" id="btn-pa-keep" onclick="keepTransaction()" disabled>
-          <span>✅</span>
-          <span>Keep Payment</span>
-        </button>
-        <button class="btn btn-warn" style="flex:1" id="btn-pa-refund-auto" onclick="proceedToRefund()" disabled>
-          <span>↩</span>
-          <span>Refund Now</span>
-        </button>
-      </div>
-      <div id="res-pa-countdown"></div>
-    </div>
-  </div>
-
-  <!-- STEP PA-5: Verify Auto Reversal Status -->
-  <div class="step-card skipped" id="step-pa-verify-reverse">
-    <div class="step-header" onclick="toggleStepEl('body-pa-verify-reverse','chev-pa-verify-reverse')">
-      <div class="step-num">5</div>
-      <div style="flex:1">
-        <div class="step-title">Verify Auto Reversal Status</div>
-        <div class="step-subtitle">Query transaction status to confirm reversal was successful</div>
-      </div>
-      <span class="step-status-badge badge-pending" id="badge-pa-verify-reverse">Pending</span>
-      <span style="color:var(--text-muted);margin-left:8px;" id="chev-pa-verify-reverse">▾</span>
-    </div>
-    <div class="step-body" id="body-pa-verify-reverse">
-      <div class="note-box">
-        📌 <strong>Verify Reversal Status:</strong> Query the transaction using TransactionIndex to confirm the reversal was successful.
-      </div>
-      <button class="btn btn-info btn-full" id="btn-pa-verify-reverse" onclick="runPaVerifyReverse()">
-        <span id="ico-pa-verify-reverse">🔍</span>
-        <span id="lbl-pa-verify-reverse">Verify Reversal Status</span>
-      </button>
-      <div id="res-pa-verify-reverse"></div>
-    </div>
-  </div>
-
-  <!-- STEP PA-6: Refund (Credit with TransactionIndex) -->
+  <!-- STEP PA-4: Refund (Credit with TransactionIndex) -->
   <div class="step-card skipped" id="step-pa-refund">
     <div class="step-header" onclick="toggleStepEl('body-pa-refund','chev-pa-refund')">
-      <div class="step-num">6</div>
+      <div class="step-num">4</div>
       <div style="flex:1">
         <div class="step-title">Refund — Credit with TransactionIndex (Optional)</div>
-        <div class="step-subtitle">Command: <code>Credit</code> + TransactionIndex — returns captured funds to cardholder.</div>
+        <div class="step-subtitle">Command: <code>Credit</code> + TransactionIndex — returns captured funds to cardholder. Available for 6 months after original transaction.</div>
       </div>
       <span class="step-status-badge badge-pending" id="badge-pa-refund">Optional</span>
       <span style="color:var(--text-muted);margin-left:8px;" id="chev-pa-refund">▾</span>
@@ -1285,8 +1153,8 @@ function htmlPreauthSteps() {
       </div>
       <div id="partial-amount-wrap-pa" style="display:none;margin-bottom:12px;">
         <div class="field">
-          <label>Refund Amount (cents)</label>
-          <input id="refund-amount-pa" type="number" placeholder="e.g. 2500 = 25.00 in selected currency" min="1" />
+          <label>Refund Amount (ZAR cents)</label>
+          <input id="refund-amount-pa" type="number" placeholder="e.g. 2500 = R25.00" min="1" />
         </div>
       </div>
       <button class="btn btn-info btn-full" id="btn-pa-refund" onclick="runPaRefund()">
@@ -1382,8 +1250,8 @@ function htmlPrepaySteps() {
       </div>
       <div id="partial-amount-wrap-pp" style="display:none;margin-bottom:12px;">
         <div class="field">
-          <label>Refund Amount (cents)</label>
-          <input id="refund-amount-pp" type="number" placeholder="e.g. 2500 = 25.00 in selected currency" min="1" />
+          <label>Refund Amount (ZAR cents)</label>
+          <input id="refund-amount-pp" type="number" placeholder="e.g. 2500 = R25.00" min="1" />
         </div>
       </div>
       <button class="btn btn-info btn-full" id="btn-pp-refund" onclick="runPpRefund()">
@@ -1663,66 +1531,9 @@ function setRefundType(type, flowPrefix) {
    PRE-AUTH FLOW HANDLERS
 ═══════════════════════════════════════════════ */
 
-/* PA-STEP 0: PANToken (Tokenization) */
-async function runPaToken() {
-  if (!validate()) return;
-  setBusyEl('btn-pa-token','ico-pa-token','lbl-pa-token', true);
-  markStepEl('pa-token','active');
-
-  // Tokenize with minimal amount (1 cent) - amount is just for validation, not the actual charge
-  const tokenizeAmount = '1';  // Minimal amount for tokenization
-
-  const payload = buildBase('PANToken', true); // true = isEnquiry
-  payload.Enquiry = {
-    ...payload.Enquiry,
-    Amount      : tokenizeAmount,  // Minimal amount for tokenization
-    ExpiryDate  : getExpiry(),
-    PAN         : getPAN(),
-  };
-
-  let resp;
-  try { resp = await callIveri(payload); } catch(e) {
-    showRes('res-pa-token', payload, null, false, '', e.message);
-    markStepEl('pa-token','failed');
-    setBusyEl('btn-pa-token','ico-pa-token','lbl-pa-token', false,'🔐','Retry Tokenize');
-    return;
-  }
-
-  const tx = resp.Enquiry || resp;
-  const ok = tx?.Result?.Status === '0';
-
-  if (ok) {
-    state.panToken      = tx.TransactionIndex;  // store token
-    state.tokenTxIndex  = tx.TransactionIndex;
-    state.tokenMaskedPAN = tx.PAN;              // e.g. "4242........4242"
-    state.tokenExpiry    = tx.ExpiryDate;       // e.g. "092025"
-    toast('✅ Card tokenized successfully! Now enter authorization amount.', 'success');
-    markStepEl('pa-token','success');
-    showRes('res-pa-token', payload, resp, true,
-      'Card Tokenized Successfully',
-      `Token created: <code>${tx.TransactionIndex}</code>. Card ending in <strong>${tx.PAN}</strong> is now reusable for future payments. Next: Enter authorization amount.`
-    );
-    setBusyEl('btn-pa-token','ico-pa-token','lbl-pa-token', false,'✓','Card Tokenized');
-    document.getElementById('btn-pa-token').disabled = true;
-    setTimeout(() => activateStepEl('pa-auth'), 500);
-  } else {
-    toast(`Tokenization failed: ${tx?.Result?.Description || ''}`, 'error');
-    markStepEl('pa-token','failed');
-    showRes('res-pa-token', payload, resp, false, '', '', 'Tokenization Failed');
-    setBusyEl('btn-pa-token','ico-pa-token','lbl-pa-token', false,'🔐','Retry Tokenize');
-  }
-}
-
-/* PA-STEP 1: Authorisation with Token */
+/* PA-STEP 1: Authorisation with PAN */
 async function runPaAuth() {
-  if (!state.tokenTxIndex) { toast('Complete Step 1 (Tokenization) first', 'error'); return; }
-  
-  const authAmount = document.getElementById('auth-amount')?.value;
-  if (!authAmount || parseInt(authAmount, 10) < 1) {
-    toast('Please enter a valid authorization amount', 'error');
-    return;
-  }
-
+  if (!validate()) return;
   setBusyEl('btn-pa-auth','ico-pa-auth','lbl-pa-auth', true);
   markStepEl('pa-auth','active');
 
@@ -1731,13 +1542,13 @@ async function runPaAuth() {
     ...payload.Transaction,
     MerchantReference : nextRef(),
     MerchantTrace     : nextTrace(),
-    Currency          : getCurrency(),
-    Amount            : authAmount,  // User-entered authorization amount
-    TransactionIndex  : state.tokenTxIndex,  // Use token from Step 1
-    PANFormat         : 'TransactionIndex',
-    PAN               : state.tokenMaskedPAN,  // masked PAN from token
-    ExpiryDate        : state.tokenExpiry,     // ExpiryDate from token
+    Currency          : 'ZAR',
+    Amount            : cfg('cfg-amount'),
+    ExpiryDate        : getExpiry(),
+    PAN               : getPAN(),
   };
+  if (getCVV())  payload.Transaction.CardSecurityCode = getCVV();
+  if (getName()) payload.Transaction.CardholderName   = getName();
 
   let resp;
   try { resp = await callIveri(payload); } catch(e) {
@@ -1752,14 +1563,14 @@ async function runPaAuth() {
 
   if (ok) {
     state.authTxIndex   = tx.TransactionIndex;
-    state.authMaskedPAN = tx.PAN        || null;
-    state.authExpiry    = tx.ExpiryDate || null;
-    state.addAuthAmount = parseInt(authAmount, 10);  // Store the authorized amount
-    toast('✅ Pre-Authorisation successful! Funds reserved.', 'success');
+    state.authMaskedPAN = tx.PAN        || null;   // e.g. "4242........4242"
+    state.authExpiry    = tx.ExpiryDate || null;   // e.g. "122025"
+    state.addAuthAmount = parseInt(cfg('cfg-amount'), 10);
+    toast('✅ Pre-Authorisation successful! TransactionIndex stored.', 'success');
     markStepEl('pa-auth','success');
     showRes('res-pa-auth', payload, resp, true,
       'Pre-Authorisation Approved',
-      `Funds of <strong>R ${(parseInt(authAmount, 10)/100).toFixed(2)}</strong> reserved on cardholder account. Auth Code: <code>${tx.AuthorisationCode||'—'}</code>. <code>TransactionIndex</code> stored for follow-up actions.`
+      `Funds of <strong>${tx.DisplayAmount||cfg('cfg-amount')+' cents'}</strong> reserved on cardholder account. Auth Code: <code>${tx.AuthorisationCode||'—'}</code>. <code>TransactionIndex</code> stored for follow-up actions.`
     );
     setBusyEl('btn-pa-auth','ico-pa-auth','lbl-pa-auth', false,'✓','Pre-Authorised');
     document.getElementById('btn-pa-auth').disabled = true;
@@ -1794,7 +1605,7 @@ async function runPaAddAuth() {
     ...payload.Transaction,
     MerchantReference : nextRef(),
     MerchantTrace     : nextTrace(),
-    Currency          : getCurrency(),
+    Currency          : 'ZAR',
     Amount            : String(addAmt),
     TransactionIndex  : state.authTxIndex,
     PANFormat         : 'TransactionIndex',
@@ -1849,17 +1660,19 @@ function skipAddAuth() {
 
 /* PA-STEP 3a: Capture (Debit with TransactionIndex) */
 async function runPaCapture() {
-  if (!state.authTxIndex) { toast('Complete Steps 1-2 first', 'error'); return; }
+  if (!state.authTxIndex) { toast('Complete Step 1 first', 'error'); return; }
   setBusyEl('btn-pa-capture','ico-pa-capture','lbl-pa-capture', true);
   markStepEl('pa-action','active');
 
+  // Use the total reserved amount (original + any additional auth).
+  // If Additional Auth was run, state.addAuthAmount = original + extra; otherwise it equals cfg-amount.
   const captureAmt = state.addAuthAmount > 0 ? String(state.addAuthAmount) : cfg('cfg-amount');
   const payload = buildBase('Debit');
   payload.Transaction = {
     ...payload.Transaction,
     Amount           : captureAmt,
     MerchantTrace    : nextTrace(),
-    TransactionIndex : state.authTxIndex,
+    TransactionIndex : state.authTxIndex,  // updated to latest TxIndex if Additional Auth ran
   };
 
   let resp;
@@ -1874,7 +1687,7 @@ async function runPaCapture() {
 
   if (ok) {
     state.debitTxIndex = tx.TransactionIndex;
-    toast('🎉 Payment captured! Starting 5-second countdown...', 'success');
+    toast('🎉 Payment captured! Funds transferred to merchant.', 'success');
     markStepEl('pa-action','success');
     showRes('res-pa-capture', payload, resp, true,
       'Payment Captured!',
@@ -1883,9 +1696,7 @@ async function runPaCapture() {
     setBusyEl('btn-pa-capture','ico-pa-capture','lbl-pa-capture', false,'✓','Captured');
     document.getElementById('btn-pa-capture').disabled = true;
     document.getElementById('btn-pa-reverse').disabled  = true;
-    setTimeout(() => activateStepEl('pa-countdown'), 500);
-    // Start the countdown after a brief delay
-    setTimeout(() => startCountdown(), 1000);
+    setTimeout(() => activateStepEl('pa-refund'), 500);
   } else {
     toast(`Capture failed: ${tx?.Result?.Description || ''}`, 'error');
     markStepEl('pa-action','failed');
@@ -1894,63 +1705,9 @@ async function runPaCapture() {
   }
 }
 
-/* Countdown timer logic */
-let countdownInterval = null;
-function startCountdown() {
-  if (state.countdownActive) return;
-  state.countdownActive = true;
-  let secondsLeft = 5;
-  const countdownNum = document.getElementById('countdown-num');
-  const ring = document.querySelector('.ring-fill');
-  const circumference = 2 * Math.PI * 36; // radius is 36
-
-  // Disable buttons during countdown
-  document.getElementById('btn-pa-keep').disabled = true;
-  document.getElementById('btn-pa-refund-auto').disabled = true;
-
-  countdownInterval = setInterval(() => {
-    secondsLeft--;
-    if (countdownNum) countdownNum.textContent = Math.max(0, secondsLeft);
-    
-    // Update progress ring
-    if (ring) {
-      const progress = (5 - Math.max(0, secondsLeft)) / 5;
-      ring.style.strokeDashoffset = circumference * (1 - progress);
-    }
-
-    if (secondsLeft <= 0) {
-      clearInterval(countdownInterval);
-      markStepEl('pa-countdown','success');
-      document.getElementById('badge-pa-countdown').textContent = 'Done';
-      document.getElementById('btn-pa-keep').disabled = false;
-      document.getElementById('btn-pa-refund-auto').disabled = false;
-      toast('⏱️ 5 seconds elapsed! Choose to keep or refund the payment.', 'info');
-    }
-  }, 1000);
-}
-
-function keepTransaction() {
-  clearInterval(countdownInterval);
-  state.countdownActive = false;
-  markStepEl('pa-countdown','success');
-  document.getElementById('badge-pa-countdown').textContent = 'Complete';
-  const res = document.getElementById('res-pa-countdown');
-  if (res) {
-    res.innerHTML = banner('success', 'Payment Kept', 'Transaction has been completed and kept. No further action required.');
-  }
-  toast('✅ Payment kept successfully!', 'success');
-}
-
-function proceedToRefund() {
-  clearInterval(countdownInterval);
-  state.countdownActive = false;
-  markStepEl('pa-countdown','success');
-  activateStepEl('pa-refund');
-}
-
-/* PA-STEP 3b: Auto Reverse (AuthorisationReversal with TransactionIndex) */
+/* PA-STEP 3b: Release (AuthorisationReversal with TransactionIndex) */
 async function runPaReverse() {
-  if (!state.authTxIndex) { toast('Complete Steps 1-2 first', 'error'); return; }
+  if (!state.authTxIndex) { toast('Complete Step 1 first', 'error'); return; }
   setBusyEl('btn-pa-reverse','ico-pa-reverse','lbl-pa-reverse', true);
   markStepEl('pa-action','active');
 
@@ -1963,7 +1720,7 @@ async function runPaReverse() {
   let resp;
   try { resp = await callIveri(payload); } catch(e) {
     showRes('res-pa-reverse', payload, null, false,'','',e.message);
-    setBusyEl('btn-pa-reverse','ico-pa-reverse','lbl-pa-reverse', false,'🔄','Retry Reverse');
+    setBusyEl('btn-pa-reverse','ico-pa-reverse','lbl-pa-reverse', false,'🔓','Retry Release');
     return;
   }
 
@@ -1971,59 +1728,29 @@ async function runPaReverse() {
   const ok = tx?.Result?.Status === '0';
 
   if (ok) {
-    state.debitTxIndex = tx.TransactionIndex;
-    toast('✅ Payment reversed! Now verifying reversal status...', 'success');
+    toast('✅ Hold released. Funds returned to cardholder.', 'success');
     markStepEl('pa-action','success');
     showRes('res-pa-reverse', payload, resp, true,
-      'Auto Reversal Initiated',
-      `The payment reversal has been initiated. The reserved funds are being released back to the cardholder's account.`
+      'Authorisation Reversed — Hold Released',
+      `The reserved funds have been released back to the cardholder's account. No payment was taken.`
     );
-    setBusyEl('btn-pa-reverse','ico-pa-reverse','lbl-pa-reverse', false,'✓','Reversed');
+    setBusyEl('btn-pa-reverse','ico-pa-reverse','lbl-pa-reverse', false,'✓','Released');
     document.getElementById('btn-pa-reverse').disabled = true;
     document.getElementById('btn-pa-capture').disabled  = true;
-    setTimeout(() => activateStepEl('pa-verify-reverse'), 500);
+    // no refund needed after reversal — just mark refund skipped/done
+    const refundStep = document.getElementById('step-pa-refund');
+    if (refundStep) {
+      refundStep.classList.remove('skipped');
+      const badge = document.getElementById('badge-pa-refund');
+      if (badge) { badge.className='step-status-badge badge-pending'; badge.textContent='N/A'; }
+      const notebox = refundStep.querySelector('.note-box');
+      if (notebox) notebox.innerHTML += '<br/><strong>ℹ️ Reversal performed — no funds were captured, so no refund is required.</strong>';
+    }
   } else {
-    toast(`Auto Reverse failed: ${tx?.Result?.Description || ''}`, 'error');
+    toast(`Release failed: ${tx?.Result?.Description || ''}`, 'error');
     markStepEl('pa-action','failed');
-    showRes('res-pa-reverse', payload, resp, false,'','','AutoReverse Failed');
-    setBusyEl('btn-pa-reverse','ico-pa-reverse','lbl-pa-reverse', false,'🔄','Retry Reverse');
-  }
-}
-
-/* PA-STEP 5: Verify Auto Reversal Status */
-async function runPaVerifyReverse() {
-  if (!state.authTxIndex) { toast('Complete auto-reversal first', 'error'); return; }
-  setBusyEl('btn-pa-verify-reverse','ico-pa-verify-reverse','lbl-pa-verify-reverse', true);
-  markStepEl('pa-verify-reverse','active');
-
-  const payload = buildBase('TransactionStatus', true); // isEnquiry = true
-  payload.Enquiry = { ...payload.Enquiry, TransactionIndex: state.authTxIndex };
-
-  let resp;
-  try { resp = await callIveri(payload); } catch(e) {
-    showRes('res-pa-verify-reverse', payload, null, false,'','',e.message);
-    markStepEl('pa-verify-reverse','failed');
-    setBusyEl('btn-pa-verify-reverse','ico-pa-verify-reverse','lbl-pa-verify-reverse', false,'🔍','Retry Verify');
-    return;
-  }
-
-  const tx = resp.Enquiry?.TransactionStatus || resp.Enquiry || resp;
-  const ok = tx?.Result?.Status === '0';
-
-  if (ok) {
-    toast('✅ Reversal verified! Funds released to cardholder.', 'success');
-    markStepEl('pa-verify-reverse','success');
-    showRes('res-pa-verify-reverse', payload, resp, true,
-      'Reversal Verified',
-      `Transaction reversal confirmed. The held funds have been released back to the cardholder.`
-    );
-    setBusyEl('btn-pa-verify-reverse','ico-pa-verify-reverse','lbl-pa-verify-reverse', false,'✓','Verified');
-    document.getElementById('btn-pa-verify-reverse').disabled = true;
-  } else {
-    toast(`Verification failed: ${tx?.Result?.Description || ''}`, 'error');
-    markStepEl('pa-verify-reverse','failed');
-    showRes('res-pa-verify-reverse', payload, resp, false,'','','Reversal Verification Failed');
-    setBusyEl('btn-pa-verify-reverse','ico-pa-verify-reverse','lbl-pa-verify-reverse', false,'🔍','Retry Verify');
+    showRes('res-pa-reverse', payload, resp, false,'','','AuthorisationReversal Failed');
+    setBusyEl('btn-pa-reverse','ico-pa-reverse','lbl-pa-reverse', false,'🔓','Retry Release');
   }
 }
 
@@ -2109,7 +1836,7 @@ async function runPpDebit() {
     ...payload.Transaction,
     MerchantReference : nextRef(),
     MerchantTrace     : nextTrace(),
-    Currency          : getCurrency(),
+    Currency          : 'ZAR',
     Amount            : cfg('cfg-amount'),
     ExpiryDate        : getExpiry(),
     PAN               : forceDecline ? '2121212121212121' : getPAN(),
@@ -2257,15 +1984,9 @@ async function runPpRefund() {
    RESET
 ═══════════════════════════════════════════════ */
 function resetDemo() {
-  clearInterval(countdownInterval);
-  state.panToken      = null;
-  state.tokenTxIndex  = null;
-  state.tokenMaskedPAN = null;
-  state.tokenExpiry   = null;
   state.authTxIndex   = null;
   state.debitTxIndex  = null;
   state.addAuthAmount = 0;
-  state.countdownActive = false;
   ppOutcome = 'approve';
   renderTimeline(state.flow);
   renderSteps(state.flow);
